@@ -4,7 +4,7 @@ import { Pool } from 'pg';
 
 let prisma: PrismaClient;
 
-const connectionString = process.env['DATABASE_URL'] || 'postgresql://postgres:postgrespassword@localhost:5432/hiveforge?schema=public';
+const connectionString = process.env['DATABASE_URL'] || 'postgresql://postgres:postgrespassword@localhost:5555/hiveforge?schema=public';
 
 const pool = new Pool({ connectionString });
 const adapter = new PrismaPg(pool);
