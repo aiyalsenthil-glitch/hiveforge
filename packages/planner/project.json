@@ -1,0 +1,19 @@
+{
+  "name": "planner",
+  "$schema": "../../node_modules/nx/schemas/project-schema.json",
+  "sourceRoot": "packages/planner/src",
+  "projectType": "library",
+  "targets": {
+    "build": {
+      "executor": "@nx/js:tsc",
+      "outputs": ["{options.outputPath}"],
+      "options": {
+        "outputPath": "dist/packages/planner",
+        "main": "packages/planner/src/index.ts",
+        "tsConfig": "packages/planner/tsconfig.lib.json",
+        "assets": []
+      }
+    }
+  },
+  "tags": []
+}

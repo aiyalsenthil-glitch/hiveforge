@@ -1,0 +1,19 @@
+{
+  "name": "worker-runtime",
+  "$schema": "../../node_modules/nx/schemas/project-schema.json",
+  "sourceRoot": "packages/worker-runtime/src",
+  "projectType": "library",
+  "targets": {
+    "build": {
+      "executor": "@nx/js:tsc",
+      "outputs": ["{options.outputPath}"],
+      "options": {
+        "outputPath": "dist/packages/worker-runtime",
+        "main": "packages/worker-runtime/src/index.ts",
+        "tsConfig": "packages/worker-runtime/tsconfig.lib.json",
+        "assets": []
+      }
+    }
+  },
+  "tags": []
+}

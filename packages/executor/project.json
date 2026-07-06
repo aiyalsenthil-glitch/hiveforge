@@ -1,0 +1,19 @@
+{
+  "name": "executor",
+  "$schema": "../../node_modules/nx/schemas/project-schema.json",
+  "sourceRoot": "packages/executor/src",
+  "projectType": "library",
+  "targets": {
+    "build": {
+      "executor": "@nx/js:tsc",
+      "outputs": ["{options.outputPath}"],
+      "options": {
+        "outputPath": "dist/packages/executor",
+        "main": "packages/executor/src/index.ts",
+        "tsConfig": "packages/executor/tsconfig.lib.json",
+        "assets": []
+      }
+    }
+  },
+  "tags": []
+}

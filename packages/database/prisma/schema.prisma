@@ -1,0 +1,276 @@
+datasource db {
+  provider = "postgresql"
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+model Organization {
+  id         String      @id @default(uuid())
+  name       String
+  createdAt  DateTime    @default(now())
+  updatedAt  DateTime    @updatedAt
+  workspaces Workspace[]
+  users      User[]
+}
+
+model User {
+  id             String         @id @default(uuid())
+  email          String         @unique
+  name           String?
+  passwordHash   String
+  organizationId String
+  organization   Organization   @relation(fields: [organizationId], references: [id])
+  roles          UserRole[]
+  createdAt      DateTime       @default(now())
+  updatedAt      DateTime       @updatedAt
+}
+
+enum Role {
+  ADMIN
+  EXECUTOR
+  VIEWER
+}
+
+model UserRole {
+  id          String    @id @default(uuid())
+  userId      String
+  user        User      @relation(fields: [userId], references: [id])
+  workspaceId String
+  workspace   Workspace @relation(fields: [workspaceId], references: [id])
+  role        Role      @default(VIEWER)
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  @@unique([userId, workspaceId])
+}
+
+model Workspace {
+  id             String        @id @default(uuid())
+  organizationId String
+  organization   Organization  @relation(fields: [organizationId], references: [id])
+  name           String
+  description    String?
+  industry       String?
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
+  userRoles      UserRole[]
+  missions       Mission[]
+  knowledge      Knowledge[]
+  files          File[]
+  embeddings     Embedding[]
+  workers        Worker[]
+}
+
+enum MissionStatus {
+  DRAFT
+  PLANNING
+  QUEUED
+  RUNNING
+  PAUSED
+  COMPLETED
+  FAILED
+  CANCELLED
+}
+
+model Mission {
+  id          String           @id @default(uuid())
+  workspaceId String
+  workspace   Workspace        @relation(fields: [workspaceId], references: [id])
+  title       String
+  description String
+  status      MissionStatus    @default(DRAFT)
+  priority    String           @default("MEDIUM") // LOW, MEDIUM, HIGH
+  createdAt   DateTime         @default(now())
+  updatedAt   DateTime         @updatedAt
+  completedAt DateTime?
+  versions    MissionVersion[]
+  tasks       Task[]
+  activities  Activity[]
+}
+
+model MissionVersion {
+  id          String   @id @default(uuid())
+  missionId   String
+  mission     Mission  @relation(fields: [missionId], references: [id], onDelete: Cascade)
+  version     Int
+  snapshot    Json     // Raw JSON representation of task graph at this version
+  createdAt   DateTime @default(now())
+
+  @@unique([missionId, version])
+}
+
+enum TaskStatus {
+  PENDING
+  WAITING_DEPENDENCIES
+  QUEUED
+  RUNNING
+  RETRYING
+  COMPLETED
+  FAILED
+  SKIPPED
+}
+
+model Task {
+  id          String             @id @default(uuid())
+  missionId   String
+  mission     Mission            @relation(fields: [missionId], references: [id], onDelete: Cascade)
+  workerType  String             // References Worker.role (e.g. Research, Finance)
+  title       String
+  description String?
+  status      TaskStatus         @default(PENDING)
+  input       Json?
+  output      Json?
+  retryCount  Int                @default(0)
+  maxRetries  Int                @default(3)
+  startedAt   DateTime?
+  completedAt DateTime?
+  createdAt   DateTime           @default(now())
+  updatedAt   DateTime           @updatedAt
+  
+  // DAG Dependencies
+  dependencies TaskDependency[]  @relation("TaskToDependencies")
+  dependents   TaskDependency[]  @relation("TaskToDependents")
+  
+  assignments  WorkerAssignment[]
+  artifacts    Artifact[]
+  logs         ExecutionLog[]
+}
+
+model TaskDependency {
+  id              String @id @default(uuid())
+  taskId          String
+  task            Task   @relation("TaskToDependencies", fields: [taskId], references: [id], onDelete: Cascade)
+  dependsOnTaskId String
+  dependsOnTask   Task   @relation("TaskToDependents", fields: [dependsOnTaskId], references: [id], onDelete: Cascade)
+
+  @@unique([taskId, dependsOnTaskId])
+}
+
+model Worker {
+  id          String           @id @default(uuid())
+  workspaceId String
+  workspace   Workspace        @relation(fields: [workspaceId], references: [id])
+  role        String           // e.g. Research, Finance, Legal
+  version     String           @default("1.0.0")
+  capabilities Json            // Array of capability strings
+  isActive    Boolean          @default(true)
+  createdAt   DateTime         @default(now())
+  updatedAt   DateTime         @updatedAt
+  prompts     PromptTemplate[]
+}
+
+model PromptTemplate {
+  id        String   @id @default(uuid())
+  workerId  String
+  worker    Worker   @relation(fields: [workerId], references: [id], onDelete: Cascade)
+  version   String
+  template  String
+  createdAt DateTime @default(now())
+
+  @@unique([workerId, version])
+}
+
+enum AssignmentStatus {
+  IDLE
+  ASSIGNED
+  EXECUTING
+  RETURNED
+  DESTROYED
+}
+
+model WorkerAssignment {
+  id         String           @id @default(uuid())
+  taskId     String
+  task       Task             @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  workerType String
+  status     AssignmentStatus @default(ASSIGNED)
+  duration   Int?             // Duration in ms
+  costTokens Int?             // Token cost of LLM call
+  startedAt  DateTime         @default(now())
+  completedAt DateTime?
+}
+
+model Artifact {
+  id          String            @id @default(uuid())
+  taskId      String
+  task        Task              @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  type        String            // e.g. BUDGET, RESEARCH_REPORT, MARKETING_STRATEGY
+  title       String
+  createdAt   DateTime          @default(now())
+  updatedAt   DateTime          @updatedAt
+  versions    ArtifactVersion[]
+}
+
+model ArtifactVersion {
+  id         String   @id @default(uuid())
+  artifactId String
+  artifact   Artifact @relation(fields: [artifactId], references: [id], onDelete: Cascade)
+  version    Int
+  content    String   // Content text (can be markdown or json string)
+  metadata   Json?
+  createdAt  DateTime @default(now())
+
+  @@unique([artifactId, version])
+}
+
+model ExecutionLog {
+  id        String   @id @default(uuid())
+  taskId    String
+  task      Task     @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  logType   String   // stdout, stderr, prompt, response
+  message   String
+  createdAt DateTime @default(now())
+}
+
+enum KnowledgeType {
+  DOCUMENT
+  NOTE
+  WEBSITE
+  PDF
+  IMAGE
+}
+
+model Knowledge {
+  id          String        @id @default(uuid())
+  workspaceId String
+  workspace   Workspace     @relation(fields: [workspaceId], references: [id])
+  title       String
+  type        KnowledgeType @default(NOTE)
+  content     String
+  source      String?
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+}
+
+model File {
+  id          String    @id @default(uuid())
+  workspaceId String
+  workspace   Workspace @relation(fields: [workspaceId], references: [id])
+  fileName    String
+  fileType    String
+  filePath    String
+  fileSize    Int
+  createdAt   DateTime  @default(now())
+}
+
+model Embedding {
+  id          String    @id @default(uuid())
+  workspaceId String
+  workspace   Workspace @relation(fields: [workspaceId], references: [id])
+  sourceType  String    // e.g. Knowledge, File
+  sourceId    String    // References Knowledge.id or File.id
+  textSnippet String
+  vectorJson  String    // Stored as JSON representing the float array [0.1, -0.2, ...]
+  createdAt   DateTime  @default(now())
+}
+
+model Activity {
+  id          String   @id @default(uuid())
+  missionId   String
+  mission     Mission  @relation(fields: [missionId], references: [id], onDelete: Cascade)
+  type        String   // e.g. MISSION_CREATED, TASK_STARTED, TASK_COMPLETED
+  message     String
+  createdAt   DateTime @default(now())
+}

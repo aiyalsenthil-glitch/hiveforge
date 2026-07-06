@@ -1,0 +1,19 @@
+{
+  "name": "ai-runtime",
+  "$schema": "../../node_modules/nx/schemas/project-schema.json",
+  "sourceRoot": "packages/ai-runtime/src",
+  "projectType": "library",
+  "targets": {
+    "build": {
+      "executor": "@nx/js:tsc",
+      "outputs": ["{options.outputPath}"],
+      "options": {
+        "outputPath": "dist/packages/ai-runtime",
+        "main": "packages/ai-runtime/src/index.ts",
+        "tsConfig": "packages/ai-runtime/tsconfig.lib.json",
+        "assets": []
+      }
+    }
+  },
+  "tags": []
+}
