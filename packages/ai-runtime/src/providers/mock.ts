@@ -61,21 +61,8 @@ export class MockAIProvider implements AIProvider {
         }, null, 2);
       }
     } else {
-      // Normal text mode (Markdown reports)
-      if (promptText.includes('research')) {
-        content = `### 🧠 Mock Research Report: Stationery & Toy Market Analysis
-**Scope:** Local neighborhood study for Acme Retail Store.
-
-#### 1. Key Findings & Market Gaps
-* **High Demand Products:** Bullet journals, dual-tip brush pens, and creative DIY kits for kids show strong upward search volume.
-* **Competitor Strengths:** Big-box retailers offer low prices but lacks curation, personalization, and niche aesthetic items.
-* **Opportunities:** Specialized "kids crafting bundles" and custom calligraphy starter packs.
-
-#### 2. Pricing & Cost Benchmarks
-* Standard Notebook Cost: $1.20 | Target Retail Price: $4.99 (Margin: 76%)
-* Specialized Art Pen Pack Cost: $3.50 | Target Retail Price: $12.99 (Margin: 73%)
-`;
-      } else if (promptText.includes('finance') || promptText.includes('budget') || promptText.includes('pricing')) {
+      // Normal text mode (Markdown reports) - check specific agent headers to avoid clashing with parent contexts
+      if (promptText.includes('finance & pricing agent')) {
         content = `### 📊 Mock Finance Report: Budget Allocation & Inventory Pricing
 **Total Allocation:** $500.00
 
@@ -90,7 +77,7 @@ export class MockAIProvider implements AIProvider {
 * **Item A (Kids Crafting Kit):** Cost $5.00 | Retail $14.99 | Margin 66%
 * **Item B (Aesthetic Planner):** Cost $2.20 | Retail $8.99 | Margin 75%
 `;
-      } else if (promptText.includes('marketing') || promptText.includes('ad') || promptText.includes('slogan')) {
+      } else if (promptText.includes('marketing copywriter')) {
         content = `### 🚀 Mock Marketing Copy: Grand Opening Campaign
 **Theme:** "Spark Creative Minds: Acme Stationery & Kids Toys"
 
@@ -103,7 +90,7 @@ export class MockAIProvider implements AIProvider {
 1. *"Acme Stationery: Where Small Ideas Make Big Impressions."*
 2. *"Play, Write, Create: Fun for Kids, Inspiration for You."*
 `;
-      } else if (promptText.includes('operations') || promptText.includes('supplier') || promptText.includes('delivery')) {
+      } else if (promptText.includes('operations & logistics agent')) {
         content = `### 📦 Mock Operations Plan: Supply Chain & Vendor Logistics
 **Goal:** Establish local stock procurement & distribution.
 
@@ -114,6 +101,19 @@ export class MockAIProvider implements AIProvider {
 #### 2. Distribution & Store Setup
 * **Fulfillment:** Standard retail shelves with dedicated "Bestsellers" and "Kids Creative Zone" sections.
 * **Delivery Strategy:** Leverage local delivery courier service for orders placed within a 5-mile radius.
+`;
+      } else if (promptText.includes('research agent')) {
+        content = `### 🧠 Mock Research Report: Stationery & Toy Market Analysis
+**Scope:** Local neighborhood study for Acme Retail Store.
+
+#### 1. Key Findings & Market Gaps
+* **High Demand Products:** Bullet journals, dual-tip brush pens, and creative DIY kits for kids show strong upward search volume.
+* **Competitor Strengths:** Big-box retailers offer low prices but lacks curation, personalization, and niche aesthetic items.
+* **Opportunities:** Specialized "kids crafting bundles" and custom calligraphy starter packs.
+
+#### 2. Pricing & Cost Benchmarks
+* Standard Notebook Cost: $1.20 | Target Retail Price: $4.99 (Margin: 76%)
+* Specialized Art Pen Pack Cost: $3.50 | Target Retail Price: $12.99 (Margin: 73%)
 `;
       } else {
         content = `### 🤖 Mock General Response
