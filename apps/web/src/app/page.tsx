@@ -65,7 +65,7 @@ export default function CommandCenter() {
   const [newPriority, setNewPriority] = useState('MEDIUM');
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const API_BASE = 'http://localhost:4000';
+  const API_BASE = typeof window !== 'undefined' ? `http://${window.location.hostname}:4000` : 'http://localhost:4000';
 
   // Check API health
   const checkHealth = useCallback(async () => {
