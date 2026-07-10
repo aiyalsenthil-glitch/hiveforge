@@ -21,7 +21,7 @@ let validatedConfig: Config;
 
 try {
   validatedConfig = configSchema.parse({
-    PORT: process.env['PORT'],
+    PORT: process.env['API_PORT'] || process.env['PORT'],
     DATABASE_URL: process.env['DATABASE_URL'],
     REDIS_URL: process.env['REDIS_URL'],
     FIREWORKS_API_KEY: process.env['FIREWORKS_API_KEY'],
