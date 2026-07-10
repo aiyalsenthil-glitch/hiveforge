@@ -1,5 +1,59 @@
 import { AIProvider, CompletionOptions, CompletionResult } from '../types';
 
+function getDynamicReplacement(promptText: string, content: string): string {
+  // Extract user's mission title or keywords from the messages
+  const goalMatch = promptText.match(/mission goal:\s*([^\n\r\-]+)/i) || promptText.match(/target goal:\s*([^\n\r]+)/i);
+  let title = '';
+  if (goalMatch && goalMatch[1]) {
+    title = goalMatch[1].trim();
+  }
+
+  if (!title) {
+    // Look for other clues
+    const clues = ['mobile', 'phone', 'shop', 'stationery', 'toy', 'store'];
+    for (const clue of clues) {
+      if (promptText.includes(clue)) {
+        title = clue;
+        break;
+      }
+    }
+  }
+
+  if (!title) return content;
+
+  // Capitalize title
+  const formattedTitle = title.split(' ').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
+
+  // Detect if it is mobile/phone related
+  const isMobile = title.toLowerCase().includes('mobile') || title.toLowerCase().includes('phone');
+
+  if (isMobile) {
+    return content
+      .replace(/stationery & kids toys/gi, 'Mobile Phones & Smart Accessories')
+      .replace(/stationery and toy/gi, 'mobile phone and tech accessory')
+      .replace(/stationery items/gi, 'smartphones and chargers')
+      .replace(/stationery/gi, 'mobile shop')
+      .replace(/Zenith Wholesale Stationery/gi, 'Zenith Mobile Distributors')
+      .replace(/Joybox Toy Distributors/gi, 'Apex Phone & Accessories Wholesalers')
+      .replace(/Kids Crafting Kit/gi, 'Flagship Smartphone')
+      .replace(/Aesthetic Planner/gi, 'Wireless Earbuds')
+      .replace(/Notebooks, Pens, Pencil Cases, Drawing Sets/gi, 'Smartphones, Cases, Screen Protectors, Chargers')
+      .replace(/Zenith Wholesale/gi, 'Zenith Mobile')
+      .replace(/wooden blocks, STEM kits/gi, 'smartphones, earphone cases')
+      .replace(/notebooks, markers/gi, 'chargers, phone cases')
+      .replace(/Standard Notebook/gi, 'USB-C Fast Charger')
+      .replace(/Specialized Art Pen Pack/gi, 'Noise Cancelling Earbuds')
+      .replace(/Back to School \/ Grand Opening/gi, 'Grand Opening')
+      .replace(/toy/gi, 'accessory')
+      .replace(/toys/gi, 'accessories');
+  }
+
+  // Generic fallback replacement using the title
+  return content
+    .replace(/Acme Stationery & Kids Toys/gi, formattedTitle)
+    .replace(/stationery/gi, title.toLowerCase());
+}
+
 export class MockAIProvider implements AIProvider {
   public readonly id = 'mock';
 
@@ -123,6 +177,8 @@ This is a simulated assistant response. The request was parsed successfully.
 `;
       }
     }
+
+    content = getDynamicReplacement(promptText, content);
 
     const promptTokens = options.messages.reduce((acc, m) => acc + m.content.split(' ').length, 0) + 10;
     const completionTokens = content.split(' ').length;
