@@ -16,7 +16,16 @@ import {
   Compass, 
   Layers,
   ChevronRight,
-  TrendingUp
+  TrendingUp,
+  Settings,
+  Database,
+  Link,
+  Users,
+  Coins,
+  DollarSign,
+  Clock,
+  Download,
+  AlertCircle
 } from 'lucide-react';
 
 interface Task {
@@ -64,6 +73,17 @@ export default function CommandCenter() {
   const [newDesc, setNewDesc] = useState('');
   const [newPriority, setNewPriority] = useState('MEDIUM');
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [showAdvanced, setShowAdvanced] = useState(false);
+
+  // Advanced Settings State
+  const [aiProvider, setAiProvider] = useState('MOCK');
+  const [aiModel, setAiModel] = useState('mock-model-1.0');
+  const [temperature, setTemperature] = useState(0.7);
+  const [budgetLimit, setBudgetLimit] = useState(10);
+  const [maxWorkers, setMaxWorkers] = useState(4);
+
+  // Deliverables Tab State
+  const [activeTab, setActiveTab] = useState<'ALL' | 'RESEARCH' | 'FINANCE' | 'MARKETING' | 'OPERATIONS'>('ALL');
 
   const API_BASE = typeof window !== 'undefined' ? `http://${window.location.hostname}:4000` : 'http://localhost:4000';
 
@@ -81,7 +101,7 @@ export default function CommandCenter() {
     } catch {
       setApiOnline(false);
     }
-  }, []);
+  }, [API_BASE]);
 
   // Fetch initial workspace details
   const fetchWorkspace = useCallback(async () => {
@@ -94,7 +114,7 @@ export default function CommandCenter() {
     } catch (e) {
       console.error('Failed to fetch workspace', e);
     }
-  }, []);
+  }, [API_BASE]);
 
   // Fetch list of missions
   const fetchMissions = useCallback(async () => {
@@ -107,7 +127,7 @@ export default function CommandCenter() {
     } catch (e) {
       console.error('Failed to fetch missions list', e);
     }
-  }, []);
+  }, [API_BASE]);
 
   // Fetch recent activity stream
   const fetchActivities = useCallback(async () => {
@@ -120,7 +140,7 @@ export default function CommandCenter() {
     } catch (e) {
       console.error('Failed to fetch activities stream', e);
     }
-  }, []);
+  }, [API_BASE]);
 
   // Fetch detailed active mission state
   const fetchActiveMission = useCallback(async (id: string) => {
@@ -133,7 +153,7 @@ export default function CommandCenter() {
     } catch (e) {
       console.error('Failed to fetch active mission details', e);
     }
-  }, []);
+  }, [API_BASE]);
 
   // Initial loads
   useEffect(() => {
@@ -173,6 +193,13 @@ export default function CommandCenter() {
           title: newTitle,
           description: newDesc,
           priority: newPriority,
+          settings: {
+            aiProvider,
+            aiModel,
+            temperature,
+            budgetLimit,
+            maxWorkers
+          }
         }),
       });
 
@@ -210,37 +237,37 @@ export default function CommandCenter() {
   const getWorkerIcon = (type: string) => {
     switch (type.toLowerCase()) {
       case 'research':
-        return <Compass className="w-5 h-5 text-blue-400" />;
+        return <Compass className="w-4 h-4 text-blue-400" />;
       case 'finance':
-        return <BarChart3 className="w-5 h-5 text-emerald-400" />;
+        return <BarChart3 className="w-4 h-4 text-emerald-400" />;
       case 'marketing':
-        return <TrendingUp className="w-5 h-5 text-purple-400" />;
+        return <TrendingUp className="w-4 h-4 text-purple-400" />;
       case 'operations':
-        return <Layers className="w-5 h-5 text-amber-400" />;
+        return <Layers className="w-4 h-4 text-amber-400" />;
       default:
-        return <HelpCircle className="w-5 h-5 text-zinc-400" />;
+        return <HelpCircle className="w-4 h-4 text-zinc-400" />;
     }
   };
 
   const getStatusIcon = (status: string) => {
     switch (status) {
       case 'COMPLETED':
-        return <CheckCircle2 className="w-5 h-5 text-emerald-500" />;
+        return <CheckCircle2 className="w-4.5 h-4.5 text-emerald-500" />;
       case 'FAILED':
-        return <XCircle className="w-5 h-5 text-red-500" />;
+        return <XCircle className="w-4.5 h-4.5 text-red-500" />;
       case 'RUNNING':
-        return <Loader2 className="w-5 h-5 text-blue-500 animate-spin" />;
+        return <Loader2 className="w-4.5 h-4.5 text-blue-500 animate-spin" />;
       case 'QUEUED':
-        return <Loader2 className="w-5 h-5 text-amber-500 animate-pulse" />;
+        return <Loader2 className="w-4.5 h-4.5 text-amber-500 animate-pulse" />;
       case 'WAITING_DEPENDENCIES':
-        return <Layers className="w-5 h-5 text-zinc-600 animate-pulse" />;
+        return <Layers className="w-4.5 h-4.5 text-zinc-600" />;
       default:
-        return <CheckCircle2 className="w-5 h-5 text-zinc-700" />;
+        return <CheckCircle2 className="w-4.5 h-4.5 text-zinc-700" />;
     }
   };
 
   const getStatusBadge = (status: string) => {
-    const base = "px-2 py-0.5 text-xs font-semibold rounded-full uppercase tracking-wider ";
+    const base = "px-2.5 py-0.5 text-[10px] font-bold rounded-full uppercase tracking-wider ";
     switch (status) {
       case 'COMPLETED':
         return <span className={base + "bg-emerald-950/40 text-emerald-400 border border-emerald-500/20"}>Completed</span>;
@@ -257,38 +284,80 @@ export default function CommandCenter() {
     }
   };
 
+  // Cost and Token aggregations
+  const totalTokens = activeMission?.tasks?.reduce((acc, t) => acc + (t.assignments?.[0]?.costTokens ?? 0), 0) ?? 0;
+  const totalCost = (totalTokens * 0.000015).toFixed(3);
+  const totalDuration = ((activeMission?.tasks?.reduce((acc, t) => acc + (t.assignments?.[0]?.duration ?? 0), 0) ?? 0) / 1000).toFixed(1);
+  const activeWorkersCount = activeMission?.tasks?.length ?? 0;
+
+  // Filter deliverables based on active tab
+  const filteredTasks = activeMission?.tasks?.filter(t => {
+    if (activeTab === 'ALL') return t.artifacts && t.artifacts.length > 0;
+    return t.workerType.toUpperCase() === activeTab && t.artifacts && t.artifacts.length > 0;
+  }) ?? [];
+
+  // Export artifact as File
+  const handleExport = (content: string, title: string, format: 'md' | 'json') => {
+    const fileContent = format === 'json' ? JSON.stringify({ title, content }, null, 2) : content;
+    const blob = new Blob([fileContent], { type: format === 'json' ? 'application/json' : 'text/markdown' });
+    const url = URL.createObjectURL(blob);
+    const linkElement = document.createElement('a');
+    linkElement.href = url;
+    linkElement.download = `${title.toLowerCase().replace(/[^a-z0-9]/gi, '_')}.${format}`;
+    document.body.appendChild(linkElement);
+    linkElement.click();
+    document.body.removeChild(linkElement);
+  };
+
   return (
     <div className="min-h-screen bg-black text-zinc-100 flex flex-col font-sans select-none antialiased">
       {/* Top Navigation Header */}
       <header className="border-b border-zinc-900 bg-zinc-950/30 backdrop-blur-md sticky top-0 z-50 px-6 py-4 flex items-center justify-between">
         <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-indigo-600 to-violet-500 flex items-center justify-center shadow-lg shadow-indigo-500/10">
-            <Cpu className="w-5 h-5 text-white" />
+          <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-yellow-500 via-amber-600 to-indigo-600 flex items-center justify-center shadow-lg shadow-indigo-500/10">
+            <span className="text-xl">🐝</span>
           </div>
           <div>
-            <h1 className="text-xl font-bold tracking-tight text-white flex items-center gap-1.5">
-              HIVEFORGE <span className="text-[10px] text-indigo-400 bg-indigo-950/60 border border-indigo-500/25 px-2 py-0.5 rounded-full font-mono uppercase">Platform</span>
+            <h1 className="text-lg font-black tracking-tight text-white flex items-center gap-2">
+              HIVEFORGE
+              <span className="text-[9px] text-amber-400 bg-amber-950/60 border border-amber-500/20 px-2 py-0.5 rounded-full font-mono uppercase tracking-widest">
+                Digital Workforce
+              </span>
             </h1>
-            <p className="text-xs text-zinc-500 flex items-center gap-1">
-              Active Workspace: <span className="text-zinc-300 font-semibold">{workspace?.name || 'Loading...'}</span>
+            <p className="text-[10px] text-zinc-500 font-semibold tracking-wide uppercase">
+              Mission-Based AI Automation
             </p>
           </div>
         </div>
 
-        {/* Engine Status Indicators */}
-        <div className="flex items-center gap-4">
-          <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-zinc-950/80 border border-zinc-900">
-            <div className={`w-2.5 h-2.5 rounded-full ${apiOnline ? 'bg-emerald-500 animate-pulse' : 'bg-red-500'}`} />
-            <span className="text-xs font-mono text-zinc-400">
-              API Server: {apiOnline ? 'ONLINE' : 'OFFLINE'}
-            </span>
+        {/* Dashboard Metrics Panel */}
+        <div className="flex items-center gap-3">
+          {/* Workspace Info */}
+          <div className="flex flex-col text-right pr-2 border-r border-zinc-900">
+            <span className="text-[9px] text-zinc-500 font-bold uppercase">Active Workspace</span>
+            <span className="text-xs font-bold text-zinc-300">{workspace?.name || 'Acme Retail'}</span>
           </div>
 
-          <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-zinc-950/80 border border-zinc-900">
-            <div className={`w-2.5 h-2.5 rounded-full ${usingInMemory ? 'bg-amber-500' : 'bg-indigo-500'}`} />
-            <span className="text-xs font-mono text-zinc-400">
-              Queue: {usingInMemory ? 'IN-MEMORY' : 'BULLMQ (REDIS)'}
-            </span>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
+            <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-zinc-950/80 border border-zinc-900">
+              <Database className="w-3.5 h-3.5 text-zinc-500" />
+              <span className="text-[10px] font-mono text-zinc-400">DB: <span className="text-emerald-400 font-bold">ONLINE</span></span>
+            </div>
+
+            <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-zinc-950/80 border border-zinc-900">
+              <Link className="w-3.5 h-3.5 text-zinc-500" />
+              <span className="text-[10px] font-mono text-zinc-400">Queue: <span className="text-indigo-400 font-bold">{usingInMemory ? 'IN-MEMORY' : 'BULLMQ'}</span></span>
+            </div>
+
+            <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-zinc-950/80 border border-zinc-900">
+              <Cpu className="w-3.5 h-3.5 text-zinc-500" />
+              <span className="text-[10px] font-mono text-zinc-400">Workers: <span className="text-purple-400 font-bold">4 ONLINE</span></span>
+            </div>
+
+            <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-zinc-950/80 border border-zinc-900">
+              <div className={`w-1.5 h-1.5 rounded-full ${apiOnline ? 'bg-emerald-500 animate-pulse' : 'bg-red-500'}`} />
+              <span className="text-[10px] font-mono text-zinc-400">Engine: <span className={apiOnline ? 'text-emerald-400 font-bold' : 'text-red-400'}>{apiOnline ? 'LIVE' : 'OFFLINE'}</span></span>
+            </div>
           </div>
         </div>
       </header>
@@ -296,41 +365,41 @@ export default function CommandCenter() {
       {/* Main Workspace Layout */}
       <main className="flex-1 flex overflow-hidden">
         {/* Left Side: Mission Composer & History */}
-        <aside className="w-80 border-r border-zinc-900 bg-zinc-950/10 p-6 flex flex-col gap-6 overflow-y-auto shrink-0">
+        <aside className="w-80 border-r border-zinc-900 bg-zinc-950/10 p-5 flex flex-col gap-5 overflow-y-auto shrink-0">
           {/* Section: Mission Composer */}
-          <div className="flex flex-col gap-4">
-            <h2 className="text-sm font-semibold uppercase tracking-wider text-zinc-400 flex items-center gap-2">
-              <Plus className="w-4 h-4" /> Compose Mission
+          <div className="flex flex-col gap-3">
+            <h2 className="text-xs font-bold uppercase tracking-wider text-zinc-400 flex items-center gap-2">
+              <Plus className="w-3.5 h-3.5" /> Compose Mission
             </h2>
-            <form onSubmit={handleCreateMission} className="flex flex-col gap-3.5 bg-zinc-950/40 p-4 rounded-xl border border-zinc-900">
+            <form onSubmit={handleCreateMission} className="flex flex-col gap-3 bg-zinc-950/40 p-4 rounded-xl border border-zinc-900">
               <div>
-                <label className="text-[10px] font-bold text-zinc-500 uppercase block mb-1">Mission Title</label>
+                <label className="text-[9px] font-bold text-zinc-500 uppercase block mb-1">Mission Title</label>
                 <input
                   type="text"
                   placeholder="e.g. Stationery Store Launch"
                   value={newTitle}
                   onChange={(e) => setNewTitle(e.target.value)}
-                  className="w-full bg-zinc-900 border border-zinc-800 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:ring-1 focus:ring-indigo-500 placeholder-zinc-600"
+                  className="w-full bg-zinc-900 border border-zinc-800 rounded-lg px-3 py-2 text-xs text-white focus:outline-none focus:ring-1 focus:ring-amber-500 placeholder-zinc-600 font-medium"
                 />
               </div>
 
               <div>
-                <label className="text-[10px] font-bold text-zinc-500 uppercase block mb-1">Goal Description</label>
+                <label className="text-[9px] font-bold text-zinc-500 uppercase block mb-1">Goal Description</label>
                 <textarea
                   placeholder="Describe what specialized workers need to accomplish..."
-                  rows={4}
+                  rows={3}
                   value={newDesc}
                   onChange={(e) => setNewDesc(e.target.value)}
-                  className="w-full bg-zinc-900 border border-zinc-800 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:ring-1 focus:ring-indigo-500 placeholder-zinc-600 resize-none"
+                  className="w-full bg-zinc-900 border border-zinc-800 rounded-lg px-3 py-2 text-xs text-white focus:outline-none focus:ring-1 focus:ring-amber-500 placeholder-zinc-600 resize-none font-medium"
                 />
               </div>
 
               <div>
-                <label className="text-[10px] font-bold text-zinc-500 uppercase block mb-1">Execution Priority</label>
+                <label className="text-[9px] font-bold text-zinc-500 uppercase block mb-1">Priority</label>
                 <select
                   value={newPriority}
                   onChange={(e) => setNewPriority(e.target.value)}
-                  className="w-full bg-zinc-900 border border-zinc-800 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:ring-1 focus:ring-indigo-500"
+                  className="w-full bg-zinc-900 border border-zinc-800 rounded-lg px-3 py-2 text-xs text-white focus:outline-none focus:ring-1 focus:ring-amber-500 font-medium"
                 >
                   <option value="LOW">Low</option>
                   <option value="MEDIUM">Medium</option>
@@ -338,16 +407,79 @@ export default function CommandCenter() {
                 </select>
               </div>
 
+              {/* Advanced Section Toggle */}
+              <button
+                type="button"
+                onClick={() => setShowAdvanced(!showAdvanced)}
+                className="text-[10px] text-zinc-400 hover:text-white flex items-center gap-1 mt-1 transition focus:outline-none"
+              >
+                <Settings className="w-3 h-3" /> {showAdvanced ? 'Hide Advanced Options' : 'Show Advanced Options'}
+              </button>
+
+              {showAdvanced && (
+                <div className="border-t border-zinc-900 pt-3 flex flex-col gap-3 animate-fadeIn">
+                  <div>
+                    <label className="text-[9px] font-bold text-zinc-500 uppercase block mb-1">AI Provider</label>
+                    <select
+                      value={aiProvider}
+                      onChange={(e) => {
+                        setAiProvider(e.target.value);
+                        setAiModel(e.target.value === 'MOCK' ? 'mock-model-1.0' : 'llama-3-70b');
+                      }}
+                      className="w-full bg-zinc-900 border border-zinc-800 rounded-lg px-3 py-2 text-xs text-white focus:outline-none focus:ring-1 focus:ring-amber-500"
+                    >
+                      <option value="MOCK">Offline Mock AI</option>
+                      <option value="FIREWORKS">Fireworks AI</option>
+                      <option value="OPENAI">OpenAI</option>
+                    </select>
+                  </div>
+
+                  <div>
+                    <label className="text-[9px] font-bold text-zinc-500 uppercase block mb-1">Temperature ({temperature})</label>
+                    <input
+                      type="range"
+                      min="0"
+                      max="1"
+                      step="0.1"
+                      value={temperature}
+                      onChange={(e) => setTemperature(parseFloat(e.target.value))}
+                      className="w-full accent-amber-500"
+                    />
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-2">
+                    <div>
+                      <label className="text-[9px] font-bold text-zinc-500 uppercase block mb-1">Budget ($)</label>
+                      <input
+                        type="number"
+                        value={budgetLimit}
+                        onChange={(e) => setBudgetLimit(parseInt(e.target.value))}
+                        className="w-full bg-zinc-900 border border-zinc-800 rounded-lg px-2 py-1.5 text-xs text-white focus:outline-none focus:ring-1"
+                      />
+                    </div>
+                    <div>
+                      <label className="text-[9px] font-bold text-zinc-500 uppercase block mb-1">Max Workers</label>
+                      <input
+                        type="number"
+                        value={maxWorkers}
+                        onChange={(e) => setMaxWorkers(parseInt(e.target.value))}
+                        className="w-full bg-zinc-900 border border-zinc-800 rounded-lg px-2 py-1.5 text-xs text-white focus:outline-none focus:ring-1"
+                      />
+                    </div>
+                  </div>
+                </div>
+              )}
+
               <button
                 type="submit"
                 disabled={isSubmitting || !newTitle.trim() || !newDesc.trim()}
-                className="w-full mt-2 bg-indigo-600 hover:bg-indigo-500 text-white rounded-lg py-2 text-sm font-semibold flex items-center justify-center gap-1.5 transition disabled:opacity-50 disabled:cursor-not-allowed"
+                className="w-full mt-1 bg-amber-600 hover:bg-amber-500 text-black font-extrabold rounded-lg py-2 text-xs flex items-center justify-center gap-1.5 transition disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 {isSubmitting ? (
-                  <Loader2 className="w-4 h-4 animate-spin" />
+                  <Loader2 className="w-3.5 h-3.5 animate-spin" />
                 ) : (
                   <>
-                    <Plus className="w-4 h-4" /> Decompose Goal
+                    <Plus className="w-3.5 h-3.5" /> Decompose Goal
                   </>
                 )}
               </button>
@@ -356,7 +488,7 @@ export default function CommandCenter() {
 
           {/* Section: Missions History */}
           <div className="flex flex-col gap-3 flex-1">
-            <h2 className="text-sm font-semibold uppercase tracking-wider text-zinc-400">
+            <h2 className="text-xs font-bold uppercase tracking-wider text-zinc-400">
               Missions List
             </h2>
             <div className="flex flex-col gap-2 overflow-y-auto max-h-96 pr-1">
@@ -367,17 +499,17 @@ export default function CommandCenter() {
                   <div
                     key={m.id}
                     onClick={() => handleSelectMission(m.id)}
-                    className={`p-3 rounded-lg border text-left cursor-pointer transition flex flex-col gap-1.5 ${
+                    className={`p-3 rounded-xl border text-left cursor-pointer transition flex flex-col gap-1.5 ${
                       activeMissionId === m.id
-                        ? 'bg-zinc-900 border-indigo-500/50'
+                        ? 'bg-zinc-900 border-amber-500/50'
                         : 'bg-zinc-950/20 border-zinc-900 hover:bg-zinc-950/60'
                     }`}
                   >
                     <div className="flex items-start justify-between gap-2">
-                      <span className="text-xs font-semibold text-zinc-200 line-clamp-1">{m.title}</span>
+                      <span className="text-xs font-bold text-zinc-200 line-clamp-1">{m.title}</span>
                       {getStatusBadge(m.status)}
                     </div>
-                    <div className="flex items-center justify-between text-[10px] text-zinc-500">
+                    <div className="flex items-center justify-between text-[9px] text-zinc-500 font-mono">
                       <span>Tasks: {m.tasks?.length || 0}</span>
                       <span>{new Date(m.createdAt).toLocaleTimeString()}</span>
                     </div>
@@ -389,7 +521,7 @@ export default function CommandCenter() {
         </aside>
 
         {/* Center Area: Current Executing Graph & Outputs */}
-        <section className="flex-1 flex flex-col overflow-y-auto bg-zinc-950/10 p-6 gap-6">
+        <section className="flex-1 flex flex-col overflow-y-auto bg-zinc-950/10 p-5 gap-5 border-r border-zinc-900">
           {!activeMission ? (
             <div className="flex-1 flex flex-col items-center justify-center gap-4 text-zinc-500 py-12">
               <Cpu className="w-12 h-12 text-zinc-800" />
@@ -400,87 +532,210 @@ export default function CommandCenter() {
             </div>
           ) : (
             <>
-              {/* Mission Heading */}
-              <div className="flex items-start justify-between gap-6 bg-zinc-950/40 p-5 rounded-xl border border-zinc-900">
-                <div className="flex flex-col gap-1.5">
-                  <div className="flex items-center gap-3">
-                    <h2 className="text-lg font-bold text-white">{activeMission.title}</h2>
-                    {getStatusBadge(activeMission.status)}
-                    <span className="text-[10px] font-bold text-zinc-400 bg-zinc-900 border border-zinc-800 px-2 py-0.5 rounded uppercase">
-                      Priority: {activeMission.priority}
-                    </span>
+              {/* Enriched Mission summary (Top Hero Area) */}
+              <div className="bg-zinc-950/40 p-5 rounded-2xl border border-zinc-900 flex flex-col gap-4">
+                <div className="flex items-start justify-between gap-6 border-b border-zinc-900 pb-4">
+                  <div className="flex flex-col gap-1">
+                    <span className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest">Active Mission</span>
+                    <div className="flex items-center gap-3">
+                      <h2 className="text-lg font-black text-white">{activeMission.title}</h2>
+                      {getStatusBadge(activeMission.status)}
+                    </div>
+                    <p className="text-xs text-zinc-400 leading-relaxed mt-1">{activeMission.description}</p>
                   </div>
-                  <p className="text-xs text-zinc-400 leading-relaxed max-w-2xl">{activeMission.description}</p>
+
+                  {activeMission.status === 'QUEUED' && (
+                    <button
+                      onClick={() => handleRunMission(activeMission.id)}
+                      className="bg-emerald-600 hover:bg-emerald-500 text-black font-extrabold rounded-lg px-4 py-2.5 text-xs flex items-center gap-2 transition"
+                    >
+                      <Play className="w-3.5 h-3.5 fill-black text-black" /> Execute Mission
+                    </button>
+                  )}
                 </div>
 
-                {activeMission.status === 'QUEUED' && (
-                  <button
-                    onClick={() => handleRunMission(activeMission.id)}
-                    className="bg-emerald-600 hover:bg-emerald-500 text-white rounded-lg px-4 py-2 text-sm font-semibold flex items-center gap-2 transition"
-                  >
-                    <Play className="w-4 h-4 fill-white" /> Execute Mission
-                  </button>
-                )}
+                {/* Rich Runtime Metrics Grid */}
+                <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4 text-zinc-400">
+                  <div className="flex items-center gap-2.5">
+                    <Users className="w-4 h-4 text-zinc-500" />
+                    <div className="flex flex-col">
+                      <span className="text-[9px] uppercase font-bold text-zinc-500">Workers</span>
+                      <span className="text-xs font-extrabold text-zinc-200">{activeWorkersCount} Workers</span>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center gap-2.5">
+                    <Clock className="w-4 h-4 text-zinc-500" />
+                    <div className="flex flex-col">
+                      <span className="text-[9px] uppercase font-bold text-zinc-500">Duration</span>
+                      <span className="text-xs font-extrabold text-zinc-200">{totalDuration}s</span>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center gap-2.5">
+                    <Coins className="w-4 h-4 text-zinc-500" />
+                    <div className="flex flex-col">
+                      <span className="text-[9px] uppercase font-bold text-zinc-500">Tokens</span>
+                      <span className="text-xs font-extrabold text-zinc-200">{totalTokens.toLocaleString()}</span>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center gap-2.5">
+                    <DollarSign className="w-4 h-4 text-zinc-500" />
+                    <div className="flex flex-col">
+                      <span className="text-[9px] uppercase font-bold text-zinc-500">Estimated Cost</span>
+                      <span className="text-xs font-extrabold text-emerald-400">${totalCost}</span>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center gap-2.5">
+                    <Cpu className="w-4 h-4 text-zinc-500" />
+                    <div className="flex flex-col">
+                      <span className="text-[9px] uppercase font-bold text-zinc-500">AI Model</span>
+                      <span className="text-xs font-extrabold text-zinc-200">{aiModel}</span>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center gap-2.5">
+                    <AlertCircle className="w-4 h-4 text-zinc-500" />
+                    <div className="flex flex-col">
+                      <span className="text-[9px] uppercase font-bold text-zinc-500">Priority</span>
+                      <span className="text-xs font-extrabold text-zinc-200 uppercase">{activeMission.priority}</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Progress Timeline Component */}
+              <div className="flex flex-col gap-2.5 bg-zinc-950/40 p-4 rounded-xl border border-zinc-900">
+                <span className="text-[9px] font-bold text-zinc-500 uppercase tracking-widest">Progress Timeline</span>
+                <div className="grid grid-cols-5 gap-2 text-center text-[10px] font-bold text-zinc-400">
+                  {['Planning', 'Research', 'Finance', 'Operations', 'Completed'].map((stage) => {
+                    let isCompleted = false;
+                    let isCurrent = false;
+
+                    if (stage === 'Planning') {
+                      isCompleted = true; // Planning is always complete once mission is generated
+                    } else if (stage === 'Research') {
+                      const researchTask = activeMission.tasks?.find(t => t.workerType.toLowerCase() === 'research');
+                      isCompleted = researchTask?.status === 'COMPLETED';
+                      isCurrent = researchTask?.status === 'RUNNING';
+                    } else if (stage === 'Finance') {
+                      const financeTask = activeMission.tasks?.find(t => t.workerType.toLowerCase() === 'finance');
+                      isCompleted = financeTask?.status === 'COMPLETED';
+                      isCurrent = financeTask?.status === 'RUNNING';
+                    } else if (stage === 'Operations') {
+                      const opsTask = activeMission.tasks?.find(t => t.workerType.toLowerCase() === 'operations');
+                      isCompleted = opsTask?.status === 'COMPLETED';
+                      isCurrent = opsTask?.status === 'RUNNING';
+                    } else if (stage === 'Completed') {
+                      isCompleted = activeMission.status === 'COMPLETED';
+                    }
+
+                    return (
+                      <div key={stage} className="flex flex-col gap-1.5">
+                        <span className={isCompleted ? 'text-emerald-400' : isCurrent ? 'text-blue-400 animate-pulse' : 'text-zinc-600'}>
+                          {stage}
+                        </span>
+                        <div className={`h-1.5 rounded-full transition-all duration-500 ${
+                          isCompleted 
+                            ? 'bg-emerald-500 shadow-md shadow-emerald-500/20' 
+                            : isCurrent 
+                            ? 'bg-blue-500 animate-pulse' 
+                            : 'bg-zinc-900'
+                        }`} />
+                      </div>
+                    );
+                  })}
+                </div>
               </div>
 
               {/* Task Dependency Live Graph Flow */}
               <div className="flex flex-col gap-3">
-                <h3 className="text-xs font-bold uppercase tracking-wider text-zinc-500 flex items-center gap-1.5">
-                  <ActivityIcon className="w-4 h-4 text-indigo-400" /> Live Execution Graph
+                <h3 className="text-[10px] font-bold uppercase tracking-wider text-zinc-500 flex items-center gap-1.5">
+                  <ActivityIcon className="w-3.5 h-3.5 text-amber-500" /> Interactive Execution Graph
                 </h3>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-                  {activeMission.tasks?.map((t, idx) => (
-                    <div
-                      key={t.id}
-                      className={`bg-zinc-950/50 border rounded-xl p-4.5 flex flex-col justify-between gap-4 transition relative ${
-                        t.status === 'RUNNING'
-                          ? 'border-indigo-500 ring-1 ring-indigo-500/20 bg-indigo-950/5'
-                          : t.status === 'COMPLETED'
-                          ? 'border-emerald-500/30'
-                          : 'border-zinc-900'
-                      }`}
-                    >
-                      {/* Connection Indicator */}
-                      {idx < activeMission.tasks.length - 1 && (
-                        <div className="hidden lg:block absolute -right-2.5 top-1/2 -translate-y-1/2 z-10">
-                          <ChevronRight className="w-5 h-5 text-zinc-800" />
-                        </div>
-                      )}
+                  {activeMission.tasks?.map((t, idx) => {
+                    const isRunning = t.status === 'RUNNING';
+                    const isCompleted = t.status === 'COMPLETED';
+                    const isWaiting = t.status === 'WAITING_DEPENDENCIES';
+                    const isFailed = t.status === 'FAILED';
 
-                      <div className="flex flex-col gap-2.5">
-                        <div className="flex items-center justify-between">
-                          <div className="flex items-center gap-1.5 bg-zinc-900/60 border border-zinc-800 px-2 py-1 rounded-lg">
-                            {getWorkerIcon(t.workerType)}
-                            <span className="text-[10px] font-bold text-zinc-300">{t.workerType} Worker</span>
+                    let statusBorder = 'border-zinc-900';
+                    let glowColor = '';
+                    if (isRunning) {
+                      statusBorder = 'border-blue-500 ring-2 ring-blue-500/25 animate-pulse';
+                      glowColor = 'shadow-lg shadow-blue-500/10';
+                    } else if (isCompleted) {
+                      statusBorder = 'border-emerald-500/40';
+                      glowColor = 'shadow-md shadow-emerald-500/5';
+                    } else if (isFailed) {
+                      statusBorder = 'border-red-500/40';
+                    } else if (isWaiting) {
+                      statusBorder = 'border-zinc-900 opacity-60';
+                    }
+
+                    return (
+                      <div
+                        key={t.id}
+                        className={`bg-zinc-950/50 border rounded-xl p-4.5 flex flex-col justify-between gap-4 transition-all duration-300 relative ${statusBorder} ${glowColor}`}
+                      >
+                        {/* Connection Indicator Arrow */}
+                        {idx < activeMission.tasks.length - 1 && (
+                          <div className="hidden lg:block absolute -right-3 top-1/2 -translate-y-1/2 z-10 bg-zinc-950 rounded-full border border-zinc-900 p-0.5">
+                            <ChevronRight className="w-4 h-4 text-zinc-700" />
                           </div>
-                          {getStatusIcon(t.status)}
+                        )}
+
+                        <div className="flex flex-col gap-2.5">
+                          <div className="flex items-center justify-between">
+                            <div className="flex items-center gap-1.5 bg-zinc-900/60 border border-zinc-800 px-2 py-1 rounded-lg">
+                              {getWorkerIcon(t.workerType)}
+                              <span className="text-[9px] font-bold text-zinc-300 uppercase tracking-wider">{t.workerType} Worker</span>
+                            </div>
+                            {getStatusIcon(t.status)}
+                          </div>
+
+                          <div>
+                            <h4 className="text-xs font-bold text-zinc-100 line-clamp-1">{t.title}</h4>
+                            <p className="text-[10px] text-zinc-500 line-clamp-2 mt-1 leading-normal">{t.description}</p>
+                          </div>
                         </div>
 
-                        <div>
-                          <h4 className="text-xs font-semibold text-zinc-100 line-clamp-1">{t.title}</h4>
-                          <p className="text-[10px] text-zinc-500 line-clamp-2 mt-1 leading-normal">{t.description}</p>
+                        {/* Extra Worker Card Metrics */}
+                        <div className="border-t border-zinc-900/60 pt-2.5 flex flex-col gap-1.5 text-[9px] text-zinc-500 font-mono">
+                          <div className="flex justify-between">
+                            <span>Duration:</span>
+                            <span className="text-zinc-300 font-bold">{t.assignments?.[0]?.duration ? `${(t.assignments[0].duration / 1000).toFixed(1)}s` : '--'}</span>
+                          </div>
+                          <div className="flex justify-between">
+                            <span>Tokens:</span>
+                            <span className="text-zinc-300 font-bold">{t.assignments?.[0]?.costTokens ?? '--'}</span>
+                          </div>
+                          <div className="flex justify-between">
+                            <span>Cost:</span>
+                            <span className="text-emerald-400 font-bold">
+                              {t.assignments?.[0]?.costTokens ? `$${((t.assignments[0].costTokens) * 0.000015).toFixed(4)}` : '--'}
+                            </span>
+                          </div>
                         </div>
                       </div>
-
-                      <div className="border-t border-zinc-900/60 pt-2.5 flex items-center justify-between text-[9px] text-zinc-500 font-mono">
-                        <span>Duration: {t.assignments?.[0]?.duration ? `${(t.assignments[0].duration / 1000).toFixed(1)}s` : '--'}</span>
-                        <span>Tokens: {t.assignments?.[0]?.costTokens ?? '--'}</span>
-                      </div>
-                    </div>
-                  ))}
+                    );
+                  })}
                 </div>
               </div>
 
-              {/* Execution Terminal and Generated Deliverables Tabbed Layout */}
-              <div className="grid grid-cols-1 xl:grid-cols-2 gap-6 min-h-[400px]">
+              {/* Execution Terminal and Tabbed Deliverables Layout */}
+              <div className="grid grid-cols-1 xl:grid-cols-2 gap-5 min-h-[380px]">
                 {/* Console Logs Terminal */}
-                <div className="flex flex-col gap-3 bg-zinc-950 rounded-xl border border-zinc-900 p-4">
+                <div className="flex flex-col gap-3 bg-zinc-950 rounded-2xl border border-zinc-900 p-4.5">
                   <h3 className="text-xs font-bold uppercase tracking-wider text-zinc-500 flex items-center gap-1.5">
-                    <Terminal className="w-4 h-4 text-zinc-400" /> Execution Logs Console
+                    <Terminal className="w-3.5 h-3.5 text-zinc-400" /> Execution Logs Console
                   </h3>
 
-                  <div className="flex-1 bg-black rounded-lg border border-zinc-900 p-4 font-mono text-[11px] text-zinc-400 overflow-y-auto max-h-[350px] leading-relaxed">
+                  <div className="flex-1 bg-black rounded-xl border border-zinc-900 p-4 font-mono text-[10px] text-zinc-400 overflow-y-auto max-h-[320px] leading-relaxed">
                     {activeMission.tasks?.flatMap(t => t.logs || []).length === 0 ? (
                       <div className="text-zinc-700 italic">Logs terminal awaiting trigger...</div>
                     ) : (
@@ -490,8 +745,8 @@ export default function CommandCenter() {
                         .map((l) => (
                           <div key={l.id} className="mb-2">
                             <span className="text-zinc-600">[{new Date(l.createdAt).toLocaleTimeString()}]</span>{' '}
-                            <span className="text-indigo-400">[{l.taskTitle}]</span>{' '}
-                            <span className={l.logType === 'stderr' ? 'text-red-400' : l.logType === 'response' ? 'text-emerald-400' : 'text-zinc-300'}>
+                            <span className="text-amber-400">[{l.taskTitle}]</span>{' '}
+                            <span className={l.logType === 'stderr' ? 'text-red-400 font-bold' : l.logType === 'response' ? 'text-emerald-400 font-bold' : 'text-zinc-300'}>
                               {l.message}
                             </span>
                           </div>
@@ -500,31 +755,57 @@ export default function CommandCenter() {
                   </div>
                 </div>
 
-                {/* Deliverables Artifact Viewer */}
-                <div className="flex flex-col gap-3 bg-zinc-950 rounded-xl border border-zinc-900 p-4">
-                  <h3 className="text-xs font-bold uppercase tracking-wider text-zinc-500 flex items-center gap-1.5">
-                    <FileText className="w-4 h-4 text-emerald-400" /> Deliverables / Artifacts
-                  </h3>
+                {/* Deliverables Artifact Viewer with Tabs & Exports */}
+                <div className="flex flex-col gap-3 bg-zinc-950 rounded-2xl border border-zinc-900 p-4.5">
+                  <div className="flex items-center justify-between border-b border-zinc-900 pb-2">
+                    <h3 className="text-xs font-bold uppercase tracking-wider text-zinc-500 flex items-center gap-1.5">
+                      <FileText className="w-3.5 h-3.5 text-emerald-400" /> Deliverables
+                    </h3>
 
-                  <div className="flex-1 overflow-y-auto max-h-[350px] flex flex-col gap-3">
-                    {activeMission.tasks?.filter(t => t.artifacts && t.artifacts.length > 0).length === 0 ? (
-                      <div className="text-xs text-zinc-600 italic py-12 text-center">No deliverables generated yet. Prerequisite tasks must complete first.</div>
+                    {/* Filter Tabs */}
+                    <div className="flex gap-1.5 bg-zinc-900 p-0.5 rounded-lg border border-zinc-800 text-[9px] font-bold">
+                      {(['ALL', 'RESEARCH', 'FINANCE', 'MARKETING', 'OPERATIONS'] as const).map(tab => (
+                        <button
+                          key={tab}
+                          onClick={() => setActiveTab(tab)}
+                          className={`px-2 py-1 rounded-md transition ${activeTab === tab ? 'bg-zinc-800 text-white font-extrabold' : 'text-zinc-500 hover:text-zinc-300'}`}
+                        >
+                          {tab}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  <div className="flex-1 overflow-y-auto max-h-[320px] flex flex-col gap-3">
+                    {filteredTasks.length === 0 ? (
+                      <div className="text-xs text-zinc-600 italic py-12 text-center">No matching deliverables. Complete prerequisite tasks first.</div>
                     ) : (
-                      activeMission.tasks
-                        ?.filter(t => t.artifacts && t.artifacts.length > 0)
-                        .map((t) => (
-                          <div key={t.id} className="bg-zinc-900/30 border border-zinc-900 rounded-lg p-4 flex flex-col gap-2 text-left">
-                            <div className="flex items-center justify-between border-b border-zinc-900 pb-2">
+                      filteredTasks.map((t) => (
+                        <div key={t.id} className="bg-zinc-900/35 border border-zinc-900 rounded-xl p-4 flex flex-col gap-3 text-left">
+                          <div className="flex items-center justify-between border-b border-zinc-900/60 pb-2">
+                            <div className="flex items-center gap-2">
+                              {getWorkerIcon(t.workerType)}
                               <span className="text-xs font-bold text-white">{t.artifacts?.[0]?.title}</span>
-                              <span className="text-[10px] bg-emerald-950/40 text-emerald-400 border border-emerald-500/20 px-2 py-0.5 rounded uppercase font-bold">
+                            </div>
+                            <div className="flex items-center gap-2">
+                              <span className="text-[9px] bg-emerald-950/40 text-emerald-400 border border-emerald-500/20 px-2 py-0.5 rounded uppercase font-bold">
                                 {t.artifacts?.[0]?.type}
                               </span>
-                            </div>
-                            <div className="text-xs text-zinc-400 font-mono whitespace-pre-wrap leading-relaxed max-h-48 overflow-y-auto pr-1">
-                              {t.artifacts?.[0]?.versions?.[0]?.content}
+                              {/* Export Trigger */}
+                              <button
+                                onClick={() => handleExport(t.artifacts?.[0]?.versions?.[0]?.content || '', t.title, 'md')}
+                                className="p-1 hover:bg-zinc-800 rounded transition text-zinc-400 hover:text-white"
+                                title="Export Markdown"
+                              >
+                                <Download className="w-3.5 h-3.5" />
+                              </button>
                             </div>
                           </div>
-                        ))
+                          <div className="text-[11px] text-zinc-400 font-mono whitespace-pre-wrap leading-relaxed max-h-48 overflow-y-auto pr-1">
+                            {t.artifacts?.[0]?.versions?.[0]?.content}
+                          </div>
+                        </div>
+                      ))
                     )}
                   </div>
                 </div>
@@ -532,26 +813,39 @@ export default function CommandCenter() {
             </>
           )}
         </section>
-      </main>
 
-      {/* Bottom Status Ticker & Live Activities Stream */}
-      <footer className="border-t border-zinc-900 bg-zinc-950/60 px-6 py-3 shrink-0 flex items-center justify-between text-xs text-zinc-500">
-        <div className="flex items-center gap-4 overflow-hidden flex-1">
-          <span className="font-bold text-[10px] uppercase tracking-wider text-indigo-400 shrink-0 flex items-center gap-1">
-            <ActivityIcon className="w-3.5 h-3.5" /> Activity Stream:
-          </span>
-          <div className="overflow-hidden relative flex-1 h-5">
+        {/* Right Side: Activity Log Timeline Panel */}
+        <aside className="w-80 border-l border-zinc-900 bg-zinc-950/10 p-5 flex flex-col gap-4 overflow-y-auto shrink-0">
+          <h2 className="text-xs font-bold uppercase tracking-wider text-zinc-400 flex items-center gap-1.5">
+            <ActivityIcon className="w-3.5 h-3.5 text-indigo-400" /> Activity Stream
+          </h2>
+
+          <div className="flex-1 overflow-y-auto pr-1 flex flex-col gap-3">
             {activities.length === 0 ? (
-              <span className="italic text-zinc-700">Awaiting activities...</span>
+              <div className="text-xs text-zinc-600 italic py-12 text-center">No activities recorded yet.</div>
             ) : (
-              <span className="animate-pulse text-zinc-300 font-medium truncate block">
-                {activities[0]?.message}
-              </span>
+              activities.map((a) => (
+                <div key={a.id} className="bg-zinc-900/20 border border-zinc-900 p-3.5 rounded-xl flex flex-col gap-1 text-left">
+                  <div className="flex justify-between items-center text-[9px] font-mono text-zinc-500">
+                    <span className="bg-zinc-900 px-1.5 py-0.5 rounded border border-zinc-800 text-[8px] font-bold text-zinc-400">
+                      {a.type}
+                    </span>
+                    <span>{new Date(a.createdAt).toLocaleTimeString()}</span>
+                  </div>
+                  <p className="text-[11px] text-zinc-300 font-medium leading-normal mt-1">{a.message}</p>
+                </div>
+              ))
             )}
           </div>
-        </div>
+        </aside>
+      </main>
 
-        <div className="shrink-0 text-[10px] font-mono text-zinc-600">
+      {/* Ticker Bar / Footer */}
+      <footer className="border-t border-zinc-900 bg-zinc-950/60 px-6 py-2.5 shrink-0 flex items-center justify-between text-[10px] text-zinc-600 font-mono">
+        <div>
+          Platform: v1.0.0-MVP
+        </div>
+        <div>
           &copy; AMD Developer Hackathon 2026
         </div>
       </footer>
