@@ -8,7 +8,7 @@ dotenv.config({ path: path.join(__dirname, '../../../../.env') });
 const configSchema = z.object({
   PORT: z.coerce.number().default(4000),
   DATABASE_URL: z.string().default('postgresql://postgres:postgrespassword@localhost:5555/hiveforge?schema=public'),
-  REDIS_URL: z.string().default('redis://localhost:7000'),
+  REDIS_URL: z.string().default('redis://localhost:7500'),
   FIREWORKS_API_KEY: z.string().optional(),
   MOCK_AI: z.coerce.boolean().default(true),
   JWT_SECRET: z.string().default('super-secret-key-for-mvp'),
