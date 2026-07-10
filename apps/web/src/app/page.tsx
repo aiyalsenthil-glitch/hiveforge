@@ -15,7 +15,6 @@ import {
   BarChart3, 
   Compass, 
   Layers,
-  ChevronRight,
   TrendingUp,
   Settings,
   Database,
@@ -604,6 +603,23 @@ export default function CommandCenter() {
                     </div>
                   </div>
                 </div>
+
+                {/* Cost Breakdown Sub-panel */}
+                {activeMission.tasks && activeMission.tasks.length > 0 && (
+                  <div className="border-t border-zinc-900/60 pt-3 flex flex-wrap items-center gap-x-4 gap-y-1.5 text-[10px] text-zinc-500 font-mono">
+                    <span className="font-bold uppercase tracking-wider text-zinc-400">Cost Breakdown:</span>
+                    {activeMission.tasks.map((t, idx) => {
+                      const costVal = ((t.assignments?.[0]?.costTokens ?? 0) * 0.000015).toFixed(4);
+                      return (
+                        <span key={t.id} className="flex items-center gap-1.5">
+                          <span className="text-zinc-300 font-semibold">{t.workerType} Worker:</span>
+                          <span className="text-emerald-400 font-bold">${costVal}</span>
+                          {idx < activeMission.tasks.length - 1 && <span className="text-zinc-700 font-sans ml-1">➔</span>}
+                        </span>
+                      );
+                    })}
+                  </div>
+                )}
               </div>
 
               {/* Progress Timeline Component */}
@@ -651,28 +667,73 @@ export default function CommandCenter() {
               </div>
 
               {/* Task Dependency Live Graph Flow */}
-              <div className="flex flex-col gap-3">
+              <div className="flex flex-col gap-4">
+                <style>{`
+                  @keyframes flowOffset {
+                    to {
+                      stroke-dashoffset: -20;
+                    }
+                  }
+                  .animate-flow-line {
+                    stroke-dasharray: 6, 4;
+                    animation: flowOffset 0.8s linear infinite;
+                  }
+                `}</style>
+
                 <h3 className="text-[10px] font-bold uppercase tracking-wider text-zinc-500 flex items-center gap-1.5">
                   <ActivityIcon className="w-3.5 h-3.5 text-amber-500" /> Interactive Execution Graph
                 </h3>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-                  {activeMission.tasks?.map((t, idx) => {
+                {(() => {
+                  const tasks = activeMission.tasks || [];
+                  const taskMap = new Map(tasks.map(t => [t.id, t]));
+                  const taskLevels: { [taskId: string]: number } = {};
+
+                  const getLevel = (taskId: string): number => {
+                    if (taskLevels[taskId] !== undefined) return taskLevels[taskId];
+                    const t = taskMap.get(taskId);
+                    if (!t || !t.dependencies || t.dependencies.length === 0) {
+                      taskLevels[taskId] = 0;
+                      return 0;
+                    }
+                    let maxParentLevel = -1;
+                    for (const dep of t.dependencies) {
+                      maxParentLevel = Math.max(maxParentLevel, getLevel(dep.dependsOnTaskId));
+                    }
+                    taskLevels[taskId] = maxParentLevel + 1;
+                    return taskLevels[taskId];
+                  };
+
+                  tasks.forEach(t => getLevel(t.id));
+
+                  // Group into list of arrays per level index
+                  const levels: Task[][] = [];
+                  tasks.forEach(t => {
+                    const lvl = taskLevels[t.id] ?? 0;
+                    if (!levels[lvl]) levels[lvl] = [];
+                    levels[lvl].push(t);
+                  });
+
+                  // Render single task node card
+                  const renderTaskCard = (t: Task) => {
                     const isRunning = t.status === 'RUNNING';
                     const isCompleted = t.status === 'COMPLETED';
                     const isWaiting = t.status === 'WAITING_DEPENDENCIES';
                     const isFailed = t.status === 'FAILED';
+                    const isQueued = t.status === 'QUEUED';
 
                     let statusBorder = 'border-zinc-900';
                     let glowColor = '';
                     if (isRunning) {
-                      statusBorder = 'border-blue-500 ring-2 ring-blue-500/25 animate-pulse';
+                      statusBorder = 'border-blue-500 ring-2 ring-blue-500/25';
                       glowColor = 'shadow-lg shadow-blue-500/10';
                     } else if (isCompleted) {
-                      statusBorder = 'border-emerald-500/40';
+                      statusBorder = 'border-emerald-500/40 bg-emerald-950/5';
                       glowColor = 'shadow-md shadow-emerald-500/5';
                     } else if (isFailed) {
-                      statusBorder = 'border-red-500/40';
+                      statusBorder = 'border-red-500/40 bg-red-950/5';
+                    } else if (isQueued) {
+                      statusBorder = 'border-amber-500/40 bg-amber-950/5';
                     } else if (isWaiting) {
                       statusBorder = 'border-zinc-900 opacity-60';
                     }
@@ -680,16 +741,9 @@ export default function CommandCenter() {
                     return (
                       <div
                         key={t.id}
-                        className={`bg-zinc-950/50 border rounded-xl p-4.5 flex flex-col justify-between gap-4 transition-all duration-300 relative ${statusBorder} ${glowColor}`}
+                        className={`bg-zinc-950/70 border rounded-xl p-4 flex flex-col justify-between gap-3 transition-all duration-300 w-full max-w-xs text-left ${statusBorder} ${glowColor}`}
                       >
-                        {/* Connection Indicator Arrow */}
-                        {idx < activeMission.tasks.length - 1 && (
-                          <div className="hidden lg:block absolute -right-3 top-1/2 -translate-y-1/2 z-10 bg-zinc-950 rounded-full border border-zinc-900 p-0.5">
-                            <ChevronRight className="w-4 h-4 text-zinc-700" />
-                          </div>
-                        )}
-
-                        <div className="flex flex-col gap-2.5">
+                        <div className="flex flex-col gap-2">
                           <div className="flex items-center justify-between">
                             <div className="flex items-center gap-1.5 bg-zinc-900/60 border border-zinc-800 px-2 py-1 rounded-lg">
                               {getWorkerIcon(t.workerType)}
@@ -704,15 +758,14 @@ export default function CommandCenter() {
                           </div>
                         </div>
 
-                        {/* Extra Worker Card Metrics */}
-                        <div className="border-t border-zinc-900/60 pt-2.5 flex flex-col gap-1.5 text-[9px] text-zinc-500 font-mono">
+                        <div className="border-t border-zinc-900/60 pt-2 flex flex-col gap-1 text-[9px] text-zinc-500 font-mono">
                           <div className="flex justify-between">
                             <span>Duration:</span>
                             <span className="text-zinc-300 font-bold">{t.assignments?.[0]?.duration ? `${(t.assignments[0].duration / 1000).toFixed(1)}s` : '--'}</span>
                           </div>
                           <div className="flex justify-between">
                             <span>Tokens:</span>
-                            <span className="text-zinc-300 font-bold">{t.assignments?.[0]?.costTokens ?? '--'}</span>
+                            <span className="text-zinc-300 font-bold">{t.assignments?.[0]?.costTokens?.toLocaleString() ?? '--'}</span>
                           </div>
                           <div className="flex justify-between">
                             <span>Cost:</span>
@@ -723,8 +776,127 @@ export default function CommandCenter() {
                         </div>
                       </div>
                     );
-                  })}
-                </div>
+                  };
+
+                  // Check if it's the standard diamond DAG (1 -> 1 -> 2)
+                  const isStandardDag = levels.length === 3 &&
+                    levels[0]?.length === 1 &&
+                    levels[1]?.length === 1 &&
+                    levels[2]?.length === 2;
+
+                  if (isStandardDag && levels[0]?.[0] && levels[1]?.[0] && levels[2]?.[0] && levels[2]?.[1]) {
+                    const taskResearch = levels[0][0];
+                    const taskFinance = levels[1][0];
+                    const taskMarketing = levels[2][0];
+                    const taskOperations = levels[2][1];
+
+                    // Helper to resolve state-based path colors
+                    const getLineColor = (parent: Task, child: Task) => {
+                      if (parent.status === 'COMPLETED' && child.status === 'COMPLETED') return '#10b981'; // Green
+                      if (parent.status === 'COMPLETED' && (child.status === 'RUNNING' || child.status === 'QUEUED')) return '#3b82f6'; // Blue
+                      return '#27272a'; // Dim zinc
+                    };
+
+                    const isLineFlowing = (parent: Task, child: Task) => {
+                      return parent.status === 'COMPLETED' && child.status === 'RUNNING';
+                    };
+
+                    return (
+                      <div className="flex flex-col items-center w-full py-4 bg-zinc-950/20 border border-zinc-900 rounded-2xl p-6">
+                        {/* Level 0: Research (Top) */}
+                        <div className="flex justify-center w-full">
+                          {renderTaskCard(taskResearch)}
+                        </div>
+
+                        {/* Connector 1: Top to Middle */}
+                        <div className="flex justify-center w-full">
+                          <svg className="w-8 h-10" fill="none" viewBox="0 0 32 40">
+                            <path
+                              d="M16 0v36"
+                              stroke={getLineColor(taskResearch, taskFinance)}
+                              strokeWidth="2.5"
+                              className={isLineFlowing(taskResearch, taskFinance) ? 'animate-flow-line' : ''}
+                            />
+                            <path
+                              d="M10 28l6 8 6-8"
+                              fill="none"
+                              stroke={getLineColor(taskResearch, taskFinance)}
+                              strokeWidth="2.5"
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                            />
+                          </svg>
+                        </div>
+
+                        {/* Level 1: Finance (Middle) */}
+                        <div className="flex justify-center w-full">
+                          {renderTaskCard(taskFinance)}
+                        </div>
+
+                        {/* Connector 2: Middle to Bottom (Split Fork) */}
+                        <div className="flex justify-center w-full">
+                          <svg className="w-full max-w-[420px] h-12" fill="none" viewBox="0 0 300 48" preserveAspectRatio="none">
+                            {/* Left Path to Marketing */}
+                            <path
+                              d="M150 0v12C150 20 40 20 40 28v20"
+                              stroke={getLineColor(taskFinance, taskMarketing)}
+                              strokeWidth="2.5"
+                              className={isLineFlowing(taskFinance, taskMarketing) ? 'animate-flow-line' : ''}
+                            />
+                            <path
+                              d="M32 40l8 8 8-8"
+                              fill="none"
+                              stroke={getLineColor(taskFinance, taskMarketing)}
+                              strokeWidth="2.5"
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                            />
+
+                            {/* Right Path to Operations */}
+                            <path
+                              d="M150 0v12C150 20 260 20 260 28v20"
+                              stroke={getLineColor(taskFinance, taskOperations)}
+                              strokeWidth="2.5"
+                              className={isLineFlowing(taskFinance, taskOperations) ? 'animate-flow-line' : ''}
+                            />
+                            <path
+                              d="M252 40l8 8 8-8"
+                              fill="none"
+                              stroke={getLineColor(taskFinance, taskOperations)}
+                              strokeWidth="2.5"
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                            />
+                          </svg>
+                        </div>
+
+                        {/* Level 2: Marketing & Operations (Bottom) */}
+                        <div className="flex justify-center gap-12 w-full max-w-2xl">
+                          {renderTaskCard(taskMarketing)}
+                          {renderTaskCard(taskOperations)}
+                        </div>
+                      </div>
+                    );
+                  }
+
+                  // Generic Fallback layout for custom shapes
+                  return (
+                    <div className="flex flex-col gap-4 items-center bg-zinc-950/20 border border-zinc-900 rounded-2xl p-6">
+                      {levels.map((lvlTasks, lvlIdx) => (
+                        <div key={lvlIdx} className="flex flex-col items-center w-full">
+                          <div className="flex flex-wrap justify-center gap-6 w-full">
+                            {lvlTasks.map(renderTaskCard)}
+                          </div>
+                          {lvlIdx < levels.length - 1 && (
+                            <svg className="w-6 h-8 text-zinc-800 my-2" fill="none" viewBox="0 0 24 32">
+                              <path d="M12 0v28M6 22l6 6 6-6" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
+                            </svg>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  );
+                })()}
               </div>
 
               {/* Execution Terminal and Tabbed Deliverables Layout */}
