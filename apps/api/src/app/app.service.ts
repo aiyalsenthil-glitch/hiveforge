@@ -37,7 +37,8 @@ export class AppService implements OnModuleInit, OnModuleDestroy {
     workspaceId: string,
     title: string,
     description: string,
-    priority = 'MEDIUM'
+    priority = 'MEDIUM',
+    settings: any = null
   ) {
     // 1. Create a Draft Mission
     const mission = await db.mission.create({
@@ -47,6 +48,7 @@ export class AppService implements OnModuleInit, OnModuleDestroy {
         description,
         priority,
         status: 'DRAFT',
+        settings: settings || undefined,
       },
     });
 

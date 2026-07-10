@@ -62,13 +62,16 @@ Priority: ${mission.priority}
 Generate a clear 3-5 task workflow that successfully achieves this goal step-by-step.`;
 
     try {
+      const settings = (mission.settings as any) || {};
+      const providerId = settings.aiProvider ? settings.aiProvider.toLowerCase() : undefined;
+
       const response = await ai.generateCompletion({
         messages: [
           { role: 'system', content: systemPrompt },
           { role: 'user', content: userPrompt },
         ],
         jsonMode: true,
-      });
+      }, providerId);
 
       const parsed = JSON.parse(response.content) as { tasks: PlannedTask[] };
       const plannedTasks = parsed.tasks || [];

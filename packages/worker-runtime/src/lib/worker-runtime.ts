@@ -164,10 +164,14 @@ ${contextFromParents}`;
         },
       });
 
+      const settings = (task.mission.settings as any) || {};
+      const providerId = settings.aiProvider ? settings.aiProvider.toLowerCase() : undefined;
+      const temp = settings.temperature !== undefined ? parseFloat(settings.temperature) : 0.7;
+
       const response = await ai.generateCompletion({
         messages: [{ role: 'user', content: workerPrompt }],
-        temperature: 0.7,
-      });
+        temperature: temp,
+      }, providerId);
 
       // 6. Save results, create Artifact records in transaction
       const duration = Date.now() - startTime;

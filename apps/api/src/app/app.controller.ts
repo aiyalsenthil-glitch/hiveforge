@@ -19,13 +19,14 @@ export class AppController {
   @Post('api/missions')
   createAndPlanMission(
     @Req() req: AuthenticatedRequest,
-    @Body() body: { title: string; description: string; priority?: string }
+    @Body() body: { title: string; description: string; priority?: string; settings?: any }
   ) {
     return this.appService.createAndPlanMission(
       req.workspaceId,
       body.title,
       body.description,
-      body.priority
+      body.priority,
+      body.settings
     );
   }
 

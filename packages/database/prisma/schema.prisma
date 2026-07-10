@@ -82,6 +82,7 @@ model Mission {
   description String
   status      MissionStatus    @default(DRAFT)
   priority    String           @default("MEDIUM") // LOW, MEDIUM, HIGH
+  settings    Json?
   createdAt   DateTime         @default(now())
   updatedAt   DateTime         @updatedAt
   completedAt DateTime?

@@ -574,12 +574,20 @@ export default function CommandCenter() {
                     <select
                       value={aiProvider}
                       onChange={(e) => {
-                        setAiProvider(e.target.value);
-                        setAiModel(e.target.value === 'MOCK' ? 'mock-model-1.0' : 'llama-3-70b');
+                        const val = e.target.value;
+                        setAiProvider(val);
+                        if (val === 'MOCK') {
+                          setAiModel('mock-model-1.0');
+                        } else if (val === 'ROCM') {
+                          setAiModel('llama3 (local ROCm)');
+                        } else {
+                          setAiModel('llama-3-70b');
+                        }
                       }}
                       className="w-full bg-zinc-900 border border-zinc-800 rounded-lg px-3 py-2 text-xs text-white focus:outline-none focus:ring-1 focus:ring-amber-500"
                     >
                       <option value="MOCK">Offline Mock AI</option>
+                      <option value="ROCM">Local AMD ROCm (Ollama)</option>
                       <option value="FIREWORKS">Fireworks AI</option>
                       <option value="OPENAI">OpenAI</option>
                     </select>

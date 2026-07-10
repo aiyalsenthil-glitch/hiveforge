@@ -3,6 +3,7 @@ import { AIProvider, CompletionOptions, CompletionResult } from '../types';
 import { OpenAIProvider } from '../providers/openai';
 import { FireworksProvider } from '../providers/fireworks';
 import { MockAIProvider } from '../providers/mock';
+import { LocalROCmProvider } from '../providers/local-rocm';
 
 export class AIRuntime {
   private defaultProvider: AIProvider;
@@ -11,6 +12,9 @@ export class AIRuntime {
   constructor() {
     const mockProvider = new MockAIProvider();
     this.providers.set('mock', mockProvider);
+
+    const rocmProvider = new LocalROCmProvider();
+    this.providers.set('rocm', rocmProvider);
 
     const fireworksKey = config.FIREWORKS_API_KEY;
     if (fireworksKey) {
