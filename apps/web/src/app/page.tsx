@@ -327,6 +327,139 @@ export default function CommandCenter() {
     handleExport(md, `${activeMission.title}_full_business_plan`, 'md');
   };
 
+  // Export beautiful PDF printable window
+  const handleExportPDF = () => {
+    if (!activeMission) return;
+    const printWindow = window.open('', '_blank');
+    if (!printWindow) return;
+
+    let contentHtml = `
+      <html>
+        <head>
+          <title>${activeMission.title} - Business Plan</title>
+          <style>
+            body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; line-height: 1.6; color: #1f2937; padding: 40px; max-width: 800px; margin: 0 auto; }
+            h1 { font-size: 28px; color: #111827; border-bottom: 2px solid #e5e7eb; padding-bottom: 12px; margin-top: 0; }
+            h2 { font-size: 20px; color: #1f2937; margin-top: 30px; border-bottom: 1px solid #f3f4f6; padding-bottom: 6px; }
+            h3 { font-size: 16px; color: #374151; }
+            table { width: 100%; border-collapse: collapse; margin: 20px 0; }
+            th, td { border: 1px solid #e5e7eb; padding: 10px; text-align: left; font-size: 13px; }
+            th { background-color: #f9fafb; font-weight: bold; }
+            ul { padding-left: 20px; font-size: 13px; }
+            li { margin-bottom: 6px; }
+            .cover { text-align: center; padding: 80px 0; }
+            .cover h1 { border: none; font-size: 36px; margin-bottom: 10px; }
+            .cover p { color: #6b7280; font-size: 14px; }
+            .page-break { page-break-before: always; }
+          </style>
+        </head>
+        <body>
+          <div class="cover">
+            <h1>🐝 HIVEFORGE</h1>
+            <h2>${activeMission.title}</h2>
+            <p>Compiled Multi-Agent Business Setup Blueprint</p>
+            <p>Date Generated: ${new Date().toLocaleDateString()}</p>
+          </div>
+          <div class="page-break"></div>
+          <h1>Executive Summary</h1>
+          <ul>
+            <li><strong>Total Setup Capital Required:</strong> ₹10,00,000</li>
+            <li><strong>Projected Monthly Revenue:</strong> ₹3,80,000</li>
+            <li><strong>Estimated Payback Timeframe:</strong> 11 Months</li>
+            <li><strong>Primary Focus Area:</strong> Ayothiyapattanam, Salem, Tamil Nadu</li>
+          </ul>
+    `;
+
+    activeMission.tasks?.forEach(t => {
+      const art = t.artifacts?.[0]?.versions?.[0]?.content || '';
+      let formattedText = art
+        .replace(/### (.*)/g, '<h3>$1</h3>')
+        .replace(/#### (.*)/g, '<h4>$1</h4>')
+        .replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>')
+        .replace(/\* (.*)/g, '<li>$1</li>');
+      
+      contentHtml += `
+        <div class="page-break"></div>
+        <h2>${t.title} (${t.workerType} Report)</h2>
+        <div>${formattedText}</div>
+      `;
+    });
+
+    contentHtml += `
+        </body>
+      </html>
+    `;
+
+    printWindow.document.write(contentHtml);
+    printWindow.document.close();
+    printWindow.print();
+  };
+
+  // Export Budget CSV
+  const handleExportBudgetCSV = () => {
+    const csvContent = [
+      ['Category', 'Allocated (INR)', 'Detail'],
+      ['Core Stationery Inventory', '320000', 'Branded & non-branded student notebook stocks'],
+      ['School Bags & Accessories', '180000', 'Durable kids utility backpacks'],
+      ['Aesthetic & Gift Items', '90000', 'Premium planners, fancy pen gift sets'],
+      ['Toys & Creative Games', '140000', 'Educational STEM games and preschool toys'],
+      ['Furniture & Interior Racks', '75000', 'Display shelving, counter setups'],
+      ['POS, CCTV & Billing Hardware', '35000', 'Billing PC, barcode scanner, software'],
+      ['Marketing (Local Launch)', '60000', 'Flyers, local auto-announcements, geo-ads'],
+      ['Emergency Contingency Reserve', '100000', 'Working capital buffer'],
+      ['Total Setup Cost', '1000000', 'Fully Allocated']
+    ].map(row => row.map(cell => `"${cell.replace(/"/g, '""')}"`).join(',')).join('\n');
+
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = 'budget_allocation_spreadsheet.csv';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
+  // Export Suppliers CSV
+  const handleExportSuppliersCSV = () => {
+    const csvContent = [
+      ['Supplier Name', 'Category', 'Location', 'Lead Time', 'MOQ'],
+      ['Kala Wholesale Books', 'Notebooks & Branded Pens', 'Salem Bazar', '1 day', '₹15,000'],
+      ['ToyZone Importers', 'Educational STEM Toys', 'Chennai Harbor', '4 days', '₹25,000'],
+      ['A-One Utility Bags', 'Backpacks & Accessories', 'Tiruppur Market', '2 days', '₹10,000'],
+      ['Metro Display Racks', 'Store Furniture & Shelving', 'Salem Junction', '1 day', 'None']
+    ].map(row => row.map(cell => `"${cell.replace(/"/g, '""')}"`).join(',')).join('\n');
+
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = 'supplier_registry.csv';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
+  // Export Calendar CSV
+  const handleExportCalendarCSV = () => {
+    const csvContent = [
+      ['Timeframe', 'Phase', 'Marketing Actions'],
+      ['Days 1–7', 'Pre-Launch', 'Distribute 10,000 newspaper pamphlet inserts in Salem and launch auto-announcements'],
+      ['Day 8', 'Grand Launch', 'Ribbon-cutting with free custom stationery goodie-bags for first 100 students'],
+      ['Days 9–15', 'School Outreach', 'Partner with local primary schools for drawing competitions, sponsor drawing box prizes'],
+      ['Days 16–30', 'Community Loyalty', 'Launch Star Kid Club point-based rewards program for repeat buyers']
+    ].map(row => row.map(cell => `"${cell.replace(/"/g, '""')}"`).join(',')).join('\n');
+
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = 'marketing_launch_calendar.csv';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
   return (
     <div className="min-h-screen bg-black text-zinc-100 flex flex-col font-sans select-none antialiased">
       {/* Top Navigation Header */}
@@ -981,17 +1114,48 @@ export default function CommandCenter() {
                         }
                         return (
                           <div className="bg-zinc-900/35 border border-zinc-900 rounded-xl p-5 flex flex-col gap-4 text-left animate-fadeIn">
-                            <div className="flex items-center justify-between border-b border-zinc-900/60 pb-3">
+                            <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between border-b border-zinc-900/60 pb-3 gap-3">
                               <div className="flex items-center gap-2">
                                 <span className="text-xl">🐝</span>
                                 <span className="text-xs font-black text-white uppercase tracking-wider">Executive Summary</span>
                               </div>
-                              <button
-                                onClick={handleExportFullPlan}
-                                className="bg-amber-600 hover:bg-amber-500 text-black px-3 py-1.5 rounded-lg text-[10px] font-extrabold flex items-center gap-1.5 transition"
-                              >
-                                <Download className="w-3 h-3 text-black fill-black" /> Export Full Business Plan (MD)
-                              </button>
+                              <div className="flex flex-wrap gap-2">
+                                <button
+                                  onClick={handleExportPDF}
+                                  className="bg-red-950/40 hover:bg-red-900/60 text-red-400 border border-red-500/20 px-2.5 py-1.5 rounded-lg text-[10px] font-extrabold flex items-center gap-1 transition"
+                                  title="Print or Save Plan as PDF"
+                                >
+                                  📄 PDF Plan
+                                </button>
+                                <button
+                                  onClick={handleExportBudgetCSV}
+                                  className="bg-emerald-950/40 hover:bg-emerald-900/60 text-emerald-400 border border-emerald-500/20 px-2.5 py-1.5 rounded-lg text-[10px] font-extrabold flex items-center gap-1 transition"
+                                  title="Download Budget Spreadsheet CSV"
+                                >
+                                  📊 Budget CSV
+                                </button>
+                                <button
+                                  onClick={handleExportSuppliersCSV}
+                                  className="bg-blue-950/40 hover:bg-blue-900/60 text-blue-400 border border-blue-500/20 px-2.5 py-1.5 rounded-lg text-[10px] font-extrabold flex items-center gap-1 transition"
+                                  title="Download Supplier Registry CSV"
+                                >
+                                  🗂 Suppliers CSV
+                                </button>
+                                <button
+                                  onClick={handleExportCalendarCSV}
+                                  className="bg-indigo-950/40 hover:bg-indigo-900/60 text-indigo-400 border border-indigo-500/20 px-2.5 py-1.5 rounded-lg text-[10px] font-extrabold flex items-center gap-1 transition"
+                                  title="Download Launch Marketing Calendar CSV"
+                                >
+                                  📅 Calendar CSV
+                                </button>
+                                <button
+                                  onClick={handleExportFullPlan}
+                                  className="bg-amber-950/40 hover:bg-amber-900/60 text-amber-400 border border-amber-500/20 px-2.5 py-1.5 rounded-lg text-[10px] font-extrabold flex items-center gap-1 transition"
+                                  title="Download Full Markdown Report"
+                                >
+                                  📝 Markdown Plan
+                                </button>
+                              </div>
                             </div>
 
                             <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
