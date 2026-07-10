@@ -117,57 +117,126 @@ export class MockAIProvider implements AIProvider {
     } else {
       // Normal text mode (Markdown reports) - check specific agent headers to avoid clashing with parent contexts
       if (promptText.includes('finance & pricing agent')) {
-        content = `### 📊 Mock Finance Report: Budget Allocation & Inventory Pricing
-**Total Allocation:** $500.00
+        content = `### 📊 Consultant Financial Plan & Cost Sheet Setup (₹10,00,000 Budget)
+**Project Location:** Ayothiyapattanam, Salem, Tamil Nadu
 
-#### 1. Budget Breakdown
-| Category | Allocated Amount | Target ROI / Purpose |
+#### 1. Capital Allocation & Inventory Investment
+| Category | Allocated (INR) | Sourcing / Detail |
 | :--- | :--- | :--- |
-| Core Inventory | $350.00 | 140 units of stationery items |
-| Social Media Ads | $100.00 | Local Facebook & Instagram geo-ads |
-| Launch Event / Print | $50.00 | Window banner & flyer prints |
+| **Core Stationery Inventory** | ₹3,20,000 | Branded & non-branded student notebook stocks |
+| **School Bags & Accessories** | ₹1,80,000 | Durable kids utility backpacks |
+| **Aesthetic & Gift Items** | ₹90,000 | Premium planners, fancy pen gift sets |
+| **Toys & Creative Games** | ₹1,40,000 | Educational STEM games and preschool toys |
+| **Furniture & Interior Racks** | ₹75,000 | Display shelving, counter setups |
+| **POS, CCTV & Billing Hardware**| ₹35,000 | Billing PC, barcode scanner, software |
+| **Marketing (Local Launch)** | ₹60,000 | Flyers, local auto-announcements, geo-ads |
+| **Emergency Contingency Reserve**| ₹1,00,000 | Working capital buffer |
+| **Total Setup Cost** | **₹10,00,000** | **Fully Allocated** |
 
-#### 2. Suggested Pricing Worksheet
-* **Item A (Kids Crafting Kit):** Cost $5.00 | Retail $14.99 | Margin 66%
-* **Item B (Aesthetic Planner):** Cost $2.20 | Retail $8.99 | Margin 75%
+#### 2. Revenue & Break-even Model (Monthly Projection)
+* **Average Daily Footfall:** 45 customers
+* **Average Basket Value:** ₹300
+* **Projected Monthly Gross Revenue:** ₹3,80,000
+* **Product Gross Margins:** 35% on average (Stationery: 30%, Toys: 40%, Gifts: 45%)
+* **Monthly Gross Profit:** ₹1,33,000
+* **Operating Expenses (Opex):** Rent (₹18,000), Salaries (₹22,000), Electricity/Misc (₹8,000) ➔ Total Opex: ₹48,000
+* **Net Monthly Cashflow:** ₹85,000
+* **Payback / Break-even Period:** ~11 Months
+
+---
+**Confidence Score:** 95%
+**Assumptions:**
+* Average gross margin stays above 33%.
+* Tenant lease agreement locked at ₹18,000/month.
 `;
       } else if (promptText.includes('marketing copywriter')) {
-        content = `### 🚀 Mock Marketing Copy: Grand Opening Campaign
-**Theme:** "Spark Creative Minds: Acme Stationery & Kids Toys"
+        content = `### 🚀 Consultant Launch & 30-Day Marketing Plan (Ayothiyapattanam Campaign)
+**Core Theme:** "Back to School, Back to Fun!"
 
-#### 1. Social Media Ad Copy (Facebook / Instagram)
-* **Hook:** Unbox creativity in your neighborhood! 🎨✏️
-* **Body:** Discover beautiful stationery, creative journaling kits, and educational toys your kids will love. To celebrate our Grand Opening, enjoy **15% OFF** your first purchase this week!
-* **CTA:** Visit us at Acme Retail, Main Street! Use code: **WELCOME15** at check-out.
+#### 1. Launch Slogans
+1. *"Ayothiyapattanam's Own Utility Hub: Quality Stationery, Joyful Toys!"*
+2. *"Play, Learn, Create: Everything Your Child Needs, Right Next Door."*
 
-#### 2. Grand Opening Slogans
-1. *"Acme Stationery: Where Small Ideas Make Big Impressions."*
-2. *"Play, Write, Create: Fun for Kids, Inspiration for You."*
+#### 2. 30-Day Launch Campaign Timeline
+* **Days 1–7 (Pre-Launch)**: Distribute 10,000 pamphlet inserts in local Salem newspapers. Set up standard auto-rickshaw loudspeaker announcements across nearby villages.
+* **Day 8 (Grand Launch)**: Ribbon-cutting with free custom stationery goodie-bags for the first 100 students.
+* **Days 9–15 (School Outreach)**: Partner with local primary schools for drawing competitions, sponsoring the prizes (branded fancy boxes).
+* **Days 16–30 (Community Loyalty)**: Launch the "Star Kid Club" point-based rewards program for repeat buyers.
+
+#### 3. Instagram Content & Social Campaign
+* **Week 1 Focus**: "What's in my bag?" Reels showing kids utility sets.
+* **Target Audience**: Salem local moms (Age 25–45) targeted via Facebook/Instagram geo-radius ads (5km radius).
+* **Estimated ROI**: ₹1.8 Return on Ad Spend (ROAS) in month 1, growing to 2.5x by month 3.
+
+---
+**Confidence Score:** 88%
+**Assumptions:**
+* Local schools allow pamphlet distributions.
+* High conversion rate on printed discount coupons (10% off).
 `;
       } else if (promptText.includes('operations & logistics agent')) {
-        content = `### 📦 Mock Operations Plan: Supply Chain & Vendor Logistics
-**Goal:** Establish local stock procurement & distribution.
+        content = `### 📦 Consultant Operations, Logistics & Supply Chain Blueprint
+**Warehouse & Sourcing Strategy:** Ayothiyapattanam, Salem
 
-#### 1. Shortlisted Niche Suppliers
-* **Zenith Wholesale Stationery:** Lead time 3 days. Minimum Order Quantity (MOQ) $100. Good for notebooks, markers.
-* **Joybox Toy Distributors:** Lead time 5 days. MOQ $150. Good for wooden blocks, STEM kits.
+#### 1. Vetted Wholesale Supplier Network
+| Supplier Name | Category | Location | Lead Time | MOQ |
+| :--- | :--- | :--- | :--- | :--- |
+| **Kala Wholesale Books** | Notebooks & Branded Pens | Salem Bazar | 1 day | ₹15,000 |
+| **ToyZone Importers** | Educational STEM Toys | Chennai Harbor | 4 days | ₹25,000 |
+| **A-One Utility Bags** | Backpacks & Accessories | Tiruppur Market | 2 days | ₹10,000 |
+| **Metro Display Racks** | Store Furniture & Shelving | Salem Junction | 1 day | None |
 
-#### 2. Distribution & Store Setup
-* **Fulfillment:** Standard retail shelves with dedicated "Bestsellers" and "Kids Creative Zone" sections.
-* **Delivery Strategy:** Leverage local delivery courier service for orders placed within a 5-mile radius.
+#### 2. Daily SOP & Staffing Blueprint
+* **Store Operating Hours**: 9:00 AM to 9:30 PM (Peak hours: 4:00 PM to 8:30 PM).
+* **Staffing Plan**: 1 Store Manager (Owner), 1 Billing Clerk/Sales Assistant.
+* **Daily Checklist**:
+  * 09:00 AM: Shutter lift, POS login, cash register count.
+  * 01:00 PM: Inventory restocking from back shelves.
+  * 09:00 PM: End-of-day sales report sync, cash deposit box lock.
+
+#### 3. Inventory Reorder Strategy
+* Trigger point set at 20% safety stock.
+* Weekly stock audit every Monday night using barcode scanner logs.
+
+---
+**Confidence Score:** 94%
+**Assumptions:**
+* Salem wholesale merchants maintain regular stock.
+* Local power supply holds (1 hour backup UPS active).
 `;
       } else if (promptText.includes('research agent')) {
-        content = `### 🧠 Mock Research Report: Stationery & Toy Market Analysis
-**Scope:** Local neighborhood study for Acme Retail Store.
+        content = `### 🧠 Consultant Market Research Report: Stationery & Kids Utility Store (Salem Region)
+**Location Focus:** Ayothiyapattanam, Salem, Tamil Nadu
+**Target Audience:** Parents, students of nearby schools (e.g., Ayothiyapattanam Government Higher Secondary School, local private matriculation schools), and teachers.
 
-#### 1. Key Findings & Market Gaps
-* **High Demand Products:** Bullet journals, dual-tip brush pens, and creative DIY kits for kids show strong upward search volume.
-* **Competitor Strengths:** Big-box retailers offer low prices but lacks curation, personalization, and niche aesthetic items.
-* **Opportunities:** Specialized "kids crafting bundles" and custom calligraphy starter packs.
+#### 1. Top 5 Competitors & SWOT Analysis
+1. *Salem Book House (Salem City)*: Large range, but 12km away. Strength: Pricing. Weakness: Distance.
+2. *Raja Stationery (Ayothiyapattanam Bazaar)*: Local. Strength: Proximity. Weakness: Poor product range, outdated inventory.
+3. *Vasanth Stores (Ammapet)*: Niche gift shop. Strength: Aesthetic gifts. Weakness: No school utilities.
+4. *Sri Ganesh Fancy & Toys (Local)*: Strength: Toys. Weakness: No corporate/student stationery.
+5. *Online Portals (Amazon/FirstCry)*: Strength: Range. Weakness: Delivery lag, no immediate tactile purchase.
 
-#### 2. Pricing & Cost Benchmarks
-* Standard Notebook Cost: $1.20 | Target Retail Price: $4.99 (Margin: 76%)
-* Specialized Art Pen Pack Cost: $3.50 | Target Retail Price: $12.99 (Margin: 73%)
+#### 2. Pricing Comparison & Gaps
+* Standard Student Notebook: Market ₹30-40 | Our Target ₹28 (Bulk sourcing)
+* Premium Calligraphy/Art Kit: Market ₹250+ | Our Target ₹190 (Direct manufacturer link)
+* Market Gap: Lack of curated kids utility bundles (bags, lunchboxes, fancy pens) in the Ayothiyapattanam junction area.
+
+#### 3. Customer Personas
+* *Persona A (Ramesh, Parent)*: Prioritizes durabilty and value-for-money products for school-going children.
+* *Persona B (Anjali, Teen Student)*: Desires aesthetic Korean-style journals, pastel highlighters, and fancy bags.
+
+#### 4. Risk Assessment
+* High rent at junction ➔ Mitigation: Secure long-term lease with fixed 5% escalation.
+* Seasonality (Peak sales in June) ➔ Mitigation: Introduce seasonal toys and festival gift items during off-peak months.
+
+---
+**Confidence Score:** 92%
+**Assumptions:**
+* Retail location situated near Ayothiyapattanam bus stand/junction.
+* Total setup budget fixed at ₹10,00,000.
+**Potential Risks:**
+* Direct entry of discount chain.
+* Local distributor credit terms delays.
 `;
       } else {
         content = `### 🤖 Mock General Response
