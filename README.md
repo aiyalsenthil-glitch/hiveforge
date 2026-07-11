@@ -27,3 +27,10 @@ HiveForge is a Digital Workforce Platform where specialized AI workers collabora
 ## Status
 
 🚧 AMD Developer Hackathon 2026
+
+## Demo Note
+
+The hosted demo uses deterministic mock AI responses to ensure a fast and reliable evaluation without requiring external API credentials.
+
+HiveForge is architected with a provider-agnostic AI runtime, making it straightforward to connect real LLM providers such as AMD-supported models, OpenAI-compatible APIs, or locally hosted models.
+
