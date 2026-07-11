@@ -347,7 +347,7 @@ export default function CommandCenter() {
         id: mockId,
         title: newTitle,
         description: newDesc,
-        status: 'DRAFT',
+        status: 'QUEUED',
         priority: newPriority,
         createdAt: new Date().toISOString(),
         tasks: [
@@ -465,21 +465,18 @@ export default function CommandCenter() {
         // Trigger simulation steps
         // Step 1: Research complete after 2.5s
         setTimeout(() => {
+          const act = {
+            id: 'act-' + Date.now(),
+            type: 'RESEARCH',
+            message: '[Research] Competitor analysis complete. Raja Stationery & Salem Book House mapped.',
+            createdAt: new Date().toISOString()
+          };
+          setLocalActivities(prev => [act, ...prev]);
+          setActivities(prev => [act, ...prev]);
+
           setLocalMissions(mList => {
             const currentMission = mList.find(m => m.id === id);
             if (!currentMission) return mList;
-
-            const nextActivities = [
-              {
-                id: 'act-' + Date.now(),
-                type: 'RESEARCH',
-                message: '[Research] Competitor analysis complete. Raja Stationery & Salem Book House mapped.',
-                createdAt: new Date().toISOString()
-              },
-              ...localActivities
-            ];
-            setLocalActivities(nextActivities);
-            setActivities(nextActivities);
 
             return mList.map(m => {
               if (m.id !== id) return m;
@@ -511,21 +508,18 @@ export default function CommandCenter() {
 
         // Step 2: Finance complete after 5.0s
         setTimeout(() => {
+          const act = {
+            id: 'act-' + (Date.now() + 1),
+            type: 'FINANCE',
+            message: '[Finance] Budgeting allocation sheets generated for ₹10,00,000 store setup.',
+            createdAt: new Date().toISOString()
+          };
+          setLocalActivities(prev => [act, ...prev]);
+          setActivities(prev => [act, ...prev]);
+
           setLocalMissions(mList => {
             const currentMission = mList.find(m => m.id === id);
             if (!currentMission) return mList;
-
-            const nextActivities = [
-              {
-                id: 'act-' + (Date.now() + 1),
-                type: 'FINANCE',
-                message: '[Finance] Budgeting allocation sheets generated for ₹10,00,000 store setup.',
-                createdAt: new Date().toISOString()
-              },
-              ...localActivities
-            ];
-            setLocalActivities(nextActivities);
-            setActivities(nextActivities);
 
             return mList.map(m => {
               if (m.id !== id) return m;
@@ -557,33 +551,32 @@ export default function CommandCenter() {
 
         // Step 3: Marketing & Operations complete after 7.5s
         setTimeout(() => {
+          const acts = [
+            {
+              id: 'act-' + (Date.now() + 2),
+              type: 'MARKETING',
+              message: '[Marketing] 30-day pre-launch and Grand Opening timeline constructed.',
+              createdAt: new Date().toISOString()
+            },
+            {
+              id: 'act-' + (Date.now() + 3),
+              type: 'OPERATIONS',
+              message: '[Operations] Wholesale suppliers registered and Daily SOP checklist active.',
+              createdAt: new Date().toISOString()
+            },
+            {
+              id: 'act-' + (Date.now() + 4),
+              type: 'SYSTEM',
+              message: `Mission completed successfully. Deliverables generated.`,
+              createdAt: new Date().toISOString()
+            }
+          ];
+          setLocalActivities(prev => [...acts, ...prev]);
+          setActivities(prev => [...acts, ...prev]);
+
           setLocalMissions(mList => {
             const currentMission = mList.find(m => m.id === id);
             if (!currentMission) return mList;
-
-            const nextActivities = [
-              {
-                id: 'act-' + (Date.now() + 2),
-                type: 'MARKETING',
-                message: '[Marketing] 30-day pre-launch and Grand Opening timeline constructed.',
-                createdAt: new Date().toISOString()
-              },
-              {
-                id: 'act-' + (Date.now() + 3),
-                type: 'OPERATIONS',
-                message: '[Operations] Wholesale suppliers registered and Daily SOP checklist active.',
-                createdAt: new Date().toISOString()
-              },
-              {
-                id: 'act-' + (Date.now() + 4),
-                type: 'SYSTEM',
-                message: `Mission "${currentMission.title}" execution completed successfully.`,
-                createdAt: new Date().toISOString()
-              },
-              ...localActivities
-            ];
-            setLocalActivities(nextActivities);
-            setActivities(nextActivities);
 
             return mList.map(m => {
               if (m.id !== id) return m;
