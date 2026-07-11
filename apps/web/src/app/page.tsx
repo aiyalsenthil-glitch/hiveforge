@@ -75,8 +75,8 @@ export default function CommandCenter() {
   const [showAdvanced, setShowAdvanced] = useState(false);
 
   // Advanced Settings State
-  const [aiProvider, setAiProvider] = useState('MOCK');
-  const [aiModel, setAiModel] = useState('mock-model-1.0');
+  const [aiProvider, setAiProvider] = useState('ROCM');
+  const [aiModel, setAiModel] = useState('llama3 (local ROCm)');
   const [temperature, setTemperature] = useState(0.7);
   const [budgetLimit, setBudgetLimit] = useState(10);
   const [maxWorkers, setMaxWorkers] = useState(4);

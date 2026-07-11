@@ -15,26 +15,21 @@ export class AIRuntime {
 
     const rocmProvider = new LocalROCmProvider();
     this.providers.set('rocm', rocmProvider);
+    this.defaultProvider = rocmProvider;
 
     const fireworksKey = config.FIREWORKS_API_KEY;
     if (fireworksKey) {
       const fwProvider = new FireworksProvider(fireworksKey);
       this.providers.set('fireworks', fwProvider);
       this.defaultProvider = fwProvider;
-    } else {
-      this.defaultProvider = mockProvider;
     }
 
     const openAiKey = process.env['OPENAI_API_KEY'] || '';
     if (openAiKey) {
       this.providers.set('openai', new OpenAIProvider(openAiKey));
-      if (!this.defaultProvider || this.defaultProvider.id === 'mock') {
+      if (!this.defaultProvider || this.defaultProvider.id === 'rocm') {
         this.defaultProvider = this.providers.get('openai')!;
       }
-    }
-
-    if (config.MOCK_AI) {
-      this.defaultProvider = mockProvider;
     }
   }
 
