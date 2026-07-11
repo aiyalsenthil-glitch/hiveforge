@@ -58,6 +58,78 @@ interface Mission {
   activities: Activity[];
 }
 
+const MOCK_RESEARCH_CONTENT = `### 🧠 Consultant Market Research Report: Stationery & Kids Utility Store (Salem Region)
+**Location Focus:** Ayothiyapattanam, Salem, Tamil Nadu
+**Target Audience:** Parents, students of school-going ages, and teachers.
+
+#### 1. Top 5 Competitors & SWOT Analysis
+1. *Salem Book House (Salem City)*: Large range, but 12km away. Strength: Pricing. Weakness: Distance.
+2. *Raja Stationery (Ayothiyapattanam Bazaar)*: Local. Strength: Proximity. Weakness: Poor product range, outdated inventory.
+3. *Vasanth Stores (Ammapet)*: Niche gift shop. Strength: Aesthetic gifts. Weakness: No school utilities.
+4. *Sri Ganesh Fancy & Toys (Local)*: Strength: Toys. Weakness: No corporate/student stationery.
+5. *Online Portals (Amazon/FirstCry)*: Strength: Range. Weakness: Delivery lag, no immediate tactile purchase.
+
+#### 2. Pricing Comparison & Gaps
+* Standard Student Notebook: Market ₹30-40 | Our Target ₹28 (Bulk sourcing)
+* Premium Calligraphy/Art Kit: Market ₹250+ | Our Target ₹190 (Direct manufacturer link)
+* Market Gap: Lack of curated kids utility bundles (bags, lunchboxes, fancy pens) in the Ayothiyapattanam junction area.
+
+#### 3. Customer Personas
+* *Persona A (Ramesh, Parent)*: Prioritizes durabilty and value-for-money products for school-going children.
+* *Persona B (Anjali, Teen Student)*: Desires aesthetic Korean-style journals, pastel highlighters, and fancy bags.
+
+#### 4. Risk Assessment
+* High rent at junction ➔ Mitigation: Secure long-term lease with fixed 5% escalation.
+* Seasonality (Peak sales in June) ➔ Mitigation: Introduce seasonal toys and festival gift items during off-peak months.`;
+
+const MOCK_FINANCE_CONTENT = `### 📊 Consultant Financial Planning & Pricing Strategy
+**Capital Investment:** ₹10,00,000
+
+#### 1. Inventory Investment & Allocation (₹10,00,000 Budget)
+* **Stationery Items (Notebooks, pens, registers)**: ₹3,20,000 (32%)
+* **School Bags & Accessories**: ₹1,80,000 (18%)
+* **Aesthetic Gift Items**: ₹90,000 (9%)
+* **Toys & Educational Games**: ₹1,40,000 (14%)
+* **Store Fixtures & POS Billing System**: ₹1,10,000 (11%)
+* **Marketing & Launch Campaigns**: ₹60,000 (6%)
+* **Emergency Reserve**: ₹1,00,000 (10%)
+
+#### 2. Profit Margin & ROI Projection
+* Stationery: Average 20% margin.
+* Fancy/Gift Items & Toys: Average 35-40% margin.
+* Projected Monthly Break-Even Sales: ₹1,50,000.
+* Expected Payback Period: 18-22 months.`;
+
+const MOCK_MARKETING_CONTENT = `### 📢 Launch Campaign & 30-Day Marketing Plan
+**Ayothiyapattanam Junction Stationery Launch**
+
+#### 1. Pre-Launch Buzz (Days 1-7)
+* Pamphlet distribution inside local school buses and tutoring centers.
+* Setup WhatsApp Business Catalog containing pre-order school kits.
+* Instagram / Facebook local targeting: Parents in Ayothiyapattanam/Salem area.
+
+#### 2. Grand Opening Day (Day 8)
+* Grand opening discount: Flat 10% off on all school bags, free fancy pen set with every purchase above ₹500.
+* Kids character mascot and balloons at store entrance to attract school children.
+
+#### 3. Post-Launch Retention (Days 9-30)
+* Loyalty Card Program: Earn 1 point for every ₹50 spent.
+* Weekend drawing competitions inside the store with stationery items as prizes.`;
+
+const MOCK_OPERATIONS_CONTENT = `### 🛠️ Supplier Sourcing & Daily SOP Checklist
+
+#### 1. Vetted Wholesale Supplier Network
+* **Kala Wholesale Books (Salem Bazar)**: Lead time: 1 day | MOQ: ₹15,000
+* **ToyZone Importers (Chennai)**: Lead time: 4 days | MOQ: ₹25,000
+* **A-One Utility Bags (Tiruppur)**: Lead time: 2 days | MOQ: ₹10,000
+* **Metro Display Racks (Salem)**: Lead time: 1 day | MOQ: None
+
+#### 2. Daily SOP Checklist
+* 09:00 AM: Shutter lift, POS login, cash register count.
+* 01:00 PM: Inventory restocking from back shelves.
+* 04:00 PM: High footfall ready (school children dispersal).
+* 09:00 PM: End-of-day sales report sync, cash deposit box lock.`;
+
 export default function CommandCenter() {
   const [workspace, setWorkspace] = useState<any>(null);
   const [missions, setMissions] = useState<any[]>([]);
@@ -66,6 +138,10 @@ export default function CommandCenter() {
   const [activities, setActivities] = useState<Activity[]>([]);
   const [apiOnline, setApiOnline] = useState<boolean>(false);
   const [usingInMemory, setUsingInMemory] = useState<boolean>(true);
+
+  // Local Offline Simulation State
+  const [localMissions, setLocalMissions] = useState<Mission[]>([]);
+  const [localActivities, setLocalActivities] = useState<Activity[]>([]);
 
   // Form State
   const [newTitle, setNewTitle] = useState('');
@@ -86,6 +162,59 @@ export default function CommandCenter() {
 
   const API_BASE = typeof window !== 'undefined' ? `http://${window.location.hostname}:4000` : 'http://localhost:4000';
 
+  // Load local offline state from localStorage on mount
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const storedMissions = localStorage.getItem('hiveforge_local_missions');
+      if (storedMissions) {
+        try {
+          const parsed = JSON.parse(storedMissions);
+          setLocalMissions(parsed);
+          if (!apiOnline) {
+            setMissions(parsed);
+          }
+        } catch (e) {
+          console.error(e);
+        }
+      }
+      const storedActivities = localStorage.getItem('hiveforge_local_activities');
+      if (storedActivities) {
+        try {
+          const parsed = JSON.parse(storedActivities);
+          setLocalActivities(parsed);
+          if (!apiOnline) {
+            setActivities(parsed);
+          }
+        } catch (e) {
+          console.error(e);
+        }
+      }
+    }
+  }, [apiOnline]);
+
+  // Sync localOffline state to localStorage
+  useEffect(() => {
+    if (typeof window !== 'undefined' && localMissions.length > 0) {
+      localStorage.setItem('hiveforge_local_missions', JSON.stringify(localMissions));
+    }
+  }, [localMissions]);
+
+  useEffect(() => {
+    if (typeof window !== 'undefined' && localActivities.length > 0) {
+      localStorage.setItem('hiveforge_local_activities', JSON.stringify(localActivities));
+    }
+  }, [localActivities]);
+
+  // Sync active mission details in offline mode
+  useEffect(() => {
+    if (!apiOnline && activeMissionId) {
+      const found = localMissions.find(m => m.id === activeMissionId);
+      if (found) {
+        setActiveMission(found);
+      }
+    }
+  }, [apiOnline, activeMissionId, localMissions]);
+
   // Check API health
   const checkHealth = useCallback(async () => {
     try {
@@ -104,6 +233,15 @@ export default function CommandCenter() {
 
   // Fetch initial workspace details
   const fetchWorkspace = useCallback(async () => {
+    if (!apiOnline) {
+      setWorkspace({
+        id: 'demo-ws',
+        name: 'Acme Retail',
+        industry: 'Retail',
+        description: 'Stationery & Kids Store'
+      });
+      return;
+    }
     try {
       const res = await fetch(`${API_BASE}/api/workspace`);
       if (res.ok) {
@@ -113,10 +251,14 @@ export default function CommandCenter() {
     } catch (e) {
       console.error('Failed to fetch workspace', e);
     }
-  }, [API_BASE]);
+  }, [API_BASE, apiOnline]);
 
   // Fetch list of missions
   const fetchMissions = useCallback(async () => {
+    if (!apiOnline) {
+      setMissions(localMissions);
+      return;
+    }
     try {
       const res = await fetch(`${API_BASE}/api/missions`);
       if (res.ok) {
@@ -126,10 +268,14 @@ export default function CommandCenter() {
     } catch (e) {
       console.error('Failed to fetch missions list', e);
     }
-  }, [API_BASE]);
+  }, [API_BASE, apiOnline, localMissions]);
 
   // Fetch recent activity stream
   const fetchActivities = useCallback(async () => {
+    if (!apiOnline) {
+      setActivities(localActivities);
+      return;
+    }
     try {
       const res = await fetch(`${API_BASE}/api/activities`);
       if (res.ok) {
@@ -139,10 +285,17 @@ export default function CommandCenter() {
     } catch (e) {
       console.error('Failed to fetch activities stream', e);
     }
-  }, [API_BASE]);
+  }, [API_BASE, apiOnline, localActivities]);
 
   // Fetch detailed active mission state
   const fetchActiveMission = useCallback(async (id: string) => {
+    if (!apiOnline) {
+      const found = localMissions.find(m => m.id === id);
+      if (found) {
+        setActiveMission(found);
+      }
+      return;
+    }
     try {
       const res = await fetch(`${API_BASE}/api/missions/${id}`);
       if (res.ok) {
@@ -152,7 +305,7 @@ export default function CommandCenter() {
     } catch (e) {
       console.error('Failed to fetch active mission details', e);
     }
-  }, [API_BASE]);
+  }, [API_BASE, apiOnline, localMissions]);
 
   // Initial loads
   useEffect(() => {
@@ -163,14 +316,16 @@ export default function CommandCenter() {
 
     const interval = setInterval(() => {
       checkHealth();
-      fetchActivities();
-      if (activeMissionId) {
-        fetchActiveMission(activeMissionId);
+      if (apiOnline) {
+        fetchActivities();
+        if (activeMissionId) {
+          fetchActiveMission(activeMissionId);
+        }
       }
     }, 2000);
 
     return () => clearInterval(interval);
-  }, [activeMissionId, checkHealth, fetchWorkspace, fetchMissions, fetchActivities, fetchActiveMission]);
+  }, [activeMissionId, apiOnline, checkHealth, fetchWorkspace, fetchMissions, fetchActivities, fetchActiveMission]);
 
   // Handle active mission selection
   const handleSelectMission = (id: string) => {
@@ -184,6 +339,82 @@ export default function CommandCenter() {
     if (!newTitle.trim() || !newDesc.trim()) return;
 
     setIsSubmitting(true);
+
+    if (!apiOnline) {
+      // Create local mock mission
+      const mockId = 'mission-' + Date.now();
+      const newMission: Mission = {
+        id: mockId,
+        title: newTitle,
+        description: newDesc,
+        status: 'DRAFT',
+        priority: newPriority,
+        createdAt: new Date().toISOString(),
+        tasks: [
+          {
+            id: mockId + '-t1',
+            title: 'Market Research for Stationery and Kids Utility Store',
+            description: 'Competitor study and demographic mapping',
+            workerType: 'Research',
+            status: 'QUEUED',
+            dependencies: [],
+            output: null,
+            assignments: []
+          },
+          {
+            id: mockId + '-t2',
+            title: 'Pricing Strategy & Financial Budgeting',
+            description: 'Inventory spreadsheet and allocations costing',
+            workerType: 'Finance',
+            status: 'WAITING_DEPENDENCIES',
+            dependencies: [{ dependsOnTaskId: mockId + '-t1' }],
+            output: null,
+            assignments: []
+          },
+          {
+            id: mockId + '-t3',
+            title: 'Marketing Plan & Launch Campaigns',
+            description: '30-day target messaging roadmap',
+            workerType: 'Marketing',
+            status: 'WAITING_DEPENDENCIES',
+            dependencies: [{ dependsOnTaskId: mockId + '-t2' }],
+            output: null,
+            assignments: []
+          },
+          {
+            id: mockId + '-t4',
+            title: 'Store Setup & Logistics Blueprint',
+            description: 'Daily operational procedures checklist',
+            workerType: 'Operations',
+            status: 'WAITING_DEPENDENCIES',
+            dependencies: [{ dependsOnTaskId: mockId + '-t2' }],
+            output: null,
+            assignments: []
+          }
+        ],
+        activities: []
+      };
+
+      const newActivity: Activity = {
+        id: 'act-' + Date.now(),
+        type: 'SYSTEM',
+        message: `Plan constructed for "${newTitle}". Tasks ready in pipeline.`,
+        createdAt: new Date().toISOString()
+      };
+
+      setLocalMissions(prev => [newMission, ...prev]);
+      setLocalActivities(prev => [newActivity, ...prev]);
+      setMissions(prev => [newMission, ...prev]);
+      setActivities(prev => [newActivity, ...prev]);
+
+      setNewTitle('');
+      setNewDesc('');
+      setNewPriority('MEDIUM');
+      setIsSubmitting(false);
+      handleSelectMission(mockId);
+      return;
+    }
+
     try {
       const res = await fetch(`${API_BASE}/api/missions`, {
         method: 'POST',
@@ -217,8 +448,195 @@ export default function CommandCenter() {
     }
   };
 
-  // Run the planned mission
+  // Run the planned mission (includes offline client simulation)
   const handleRunMission = async (id: string) => {
+    if (!apiOnline) {
+      // Simulate running offline mission
+      setLocalMissions(prevMissions => {
+        const target = prevMissions.find(m => m.id === id);
+        if (!target) return prevMissions;
+
+        // Reset tasks to starting state
+        const resetTasks = target.tasks.map(t => {
+          if (t.workerType === 'Research') return { ...t, status: 'RUNNING' as const };
+          return { ...t, status: 'WAITING_DEPENDENCIES' as const, artifacts: [], assignments: [] };
+        });
+
+        // Trigger simulation steps
+        // Step 1: Research complete after 2.5s
+        setTimeout(() => {
+          setLocalMissions(mList => {
+            const currentMission = mList.find(m => m.id === id);
+            if (!currentMission) return mList;
+
+            const nextActivities = [
+              {
+                id: 'act-' + Date.now(),
+                type: 'RESEARCH',
+                message: '[Research] Competitor analysis complete. Raja Stationery & Salem Book House mapped.',
+                createdAt: new Date().toISOString()
+              },
+              ...localActivities
+            ];
+            setLocalActivities(nextActivities);
+            setActivities(nextActivities);
+
+            return mList.map(m => {
+              if (m.id !== id) return m;
+              return {
+                ...m,
+                tasks: m.tasks.map(t => {
+                  if (t.workerType === 'Research') {
+                    return {
+                      ...t,
+                      status: 'COMPLETED' as const,
+                      assignments: [{ duration: 11056, costTokens: 562 }],
+                      artifacts: [{
+                        id: 'art-r1',
+                        type: 'TEXT',
+                        title: 'Ayothiyapattanam Market Gaps and Competitors Study',
+                        versions: [{ content: MOCK_RESEARCH_CONTENT }]
+                      }]
+                    };
+                  }
+                  if (t.workerType === 'Finance') {
+                    return { ...t, status: 'RUNNING' as const };
+                  }
+                  return t;
+                })
+              };
+            });
+          });
+        }, 2500);
+
+        // Step 2: Finance complete after 5.0s
+        setTimeout(() => {
+          setLocalMissions(mList => {
+            const currentMission = mList.find(m => m.id === id);
+            if (!currentMission) return mList;
+
+            const nextActivities = [
+              {
+                id: 'act-' + (Date.now() + 1),
+                type: 'FINANCE',
+                message: '[Finance] Budgeting allocation sheets generated for ₹10,00,000 store setup.',
+                createdAt: new Date().toISOString()
+              },
+              ...localActivities
+            ];
+            setLocalActivities(nextActivities);
+            setActivities(nextActivities);
+
+            return mList.map(m => {
+              if (m.id !== id) return m;
+              return {
+                ...m,
+                tasks: m.tasks.map(t => {
+                  if (t.workerType === 'Finance') {
+                    return {
+                      ...t,
+                      status: 'COMPLETED' as const,
+                      assignments: [{ duration: 13394, costTokens: 1040 }],
+                      artifacts: [{
+                        id: 'art-f1',
+                        type: 'TEXT',
+                        title: '₹10,00,000 Stationery Capital Allocations Strategy',
+                        versions: [{ content: MOCK_FINANCE_CONTENT }]
+                      }]
+                    };
+                  }
+                  if (t.workerType === 'Marketing' || t.workerType === 'Operations') {
+                    return { ...t, status: 'RUNNING' as const };
+                  }
+                  return t;
+                })
+              };
+            });
+          });
+        }, 5000);
+
+        // Step 3: Marketing & Operations complete after 7.5s
+        setTimeout(() => {
+          setLocalMissions(mList => {
+            const currentMission = mList.find(m => m.id === id);
+            if (!currentMission) return mList;
+
+            const nextActivities = [
+              {
+                id: 'act-' + (Date.now() + 2),
+                type: 'MARKETING',
+                message: '[Marketing] 30-day pre-launch and Grand Opening timeline constructed.',
+                createdAt: new Date().toISOString()
+              },
+              {
+                id: 'act-' + (Date.now() + 3),
+                type: 'OPERATIONS',
+                message: '[Operations] Wholesale suppliers registered and Daily SOP checklist active.',
+                createdAt: new Date().toISOString()
+              },
+              {
+                id: 'act-' + (Date.now() + 4),
+                type: 'SYSTEM',
+                message: `Mission "${currentMission.title}" execution completed successfully.`,
+                createdAt: new Date().toISOString()
+              },
+              ...localActivities
+            ];
+            setLocalActivities(nextActivities);
+            setActivities(nextActivities);
+
+            return mList.map(m => {
+              if (m.id !== id) return m;
+              return {
+                ...m,
+                status: 'COMPLETED' as const,
+                tasks: m.tasks.map(t => {
+                  if (t.workerType === 'Marketing') {
+                    return {
+                      ...t,
+                      status: 'COMPLETED' as const,
+                      assignments: [{ duration: 9280, costTokens: 822 }],
+                      artifacts: [{
+                        id: 'art-m1',
+                        type: 'TEXT',
+                        title: 'Launch Campaigns & WhatsApp Business Content',
+                        versions: [{ content: MOCK_MARKETING_CONTENT }]
+                      }]
+                    };
+                  }
+                  if (t.workerType === 'Operations') {
+                    return {
+                      ...t,
+                      status: 'COMPLETED' as const,
+                      assignments: [{ duration: 8740, costTokens: 710 }],
+                      artifacts: [{
+                        id: 'art-o1',
+                        type: 'TEXT',
+                        title: 'Vetted Wholesalers & Daily Retail SOP',
+                        versions: [{ content: MOCK_OPERATIONS_CONTENT }]
+                      }]
+                    };
+                  }
+                  return t;
+                })
+              };
+            });
+          });
+        }, 7500);
+
+        return prevMissions.map(m => {
+          if (m.id !== id) return m;
+          return {
+            ...m,
+            status: 'RUNNING' as const,
+            tasks: resetTasks
+          };
+        });
+      });
+
+      return;
+    }
+
     try {
       const res = await fetch(`${API_BASE}/api/missions/${id}/run`, {
         method: 'POST',
