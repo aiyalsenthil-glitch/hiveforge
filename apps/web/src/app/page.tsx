@@ -24,7 +24,12 @@ import {
   RefreshCw,
   Percent,
   Sparkles,
-  Compass
+  Compass,
+  LogOut,
+  User,
+  Lock,
+  ArrowRight,
+  ShieldCheck
 } from 'lucide-react';
 
 interface Task {
@@ -102,8 +107,14 @@ const INITIAL_PRODUCTS: Product[] = [
 ];
 
 export default function StoreCommandCenter() {
-  // Main Module Navigation Tab
-  const [navTab, setNavTab] = useState<'STORE_LAUNCH' | 'POS_BILLING' | 'INVENTORY' | 'SALES_ANALYTICS' | 'WORKFORCE'>('POS_BILLING');
+  // Authentication & Onboarding State
+  const [isAuthenticated, setIsAuthenticated] = useState<boolean>(false);
+  const [hasStore, setHasStore] = useState<boolean>(false);
+  const [userEmail, setUserEmail] = useState<string>('');
+  const [userPassword, setUserPassword] = useState<string>('');
+
+  // Main Navigation Tab
+  const [navTab, setNavTab] = useState<'POS_BILLING' | 'STORE_LAUNCH' | 'INVENTORY' | 'SALES_ANALYTICS' | 'WORKFORCE'>('POS_BILLING');
 
   // Core App State
   const [workspace, setWorkspace] = useState<any>(null);
@@ -140,7 +151,9 @@ export default function StoreCommandCenter() {
   const [aiInsight, setAiInsight] = useState<string | null>(null);
   const [isGeneratingInsight, setIsGeneratingInsight] = useState<boolean>(false);
 
-  // Mission Form State
+  // Store Launch Wizard Form State
+  const [newStoreName, setNewStoreName] = useState('');
+  const [newStoreIndustry, setNewStoreIndustry] = useState('Retail');
   const [newTitle, setNewTitle] = useState('');
   const [newDesc, setNewDesc] = useState('');
   const [newPriority, setNewPriority] = useState('MEDIUM');
@@ -165,12 +178,14 @@ export default function StoreCommandCenter() {
   // Fetch initial workspace details
   const fetchWorkspace = useCallback(async () => {
     if (!apiOnline) {
-      setWorkspace({
-        id: 'demo-ws',
-        name: 'Acme Retail & Store Hub',
-        industry: 'Retail Store & Kids Utilities',
-        description: 'Store Operations, POS Billing & AI Digital Workforce'
-      });
+      if (hasStore) {
+        setWorkspace({
+          id: 'demo-ws',
+          name: newStoreName || 'Acme Retail & Store Hub',
+          industry: newStoreIndustry || 'Retail Store & Kids Utilities',
+          description: 'Store Operations, POS Billing & AI Digital Workforce'
+        });
+      }
       return;
     }
     try {
@@ -182,53 +197,87 @@ export default function StoreCommandCenter() {
     } catch (e) {
       console.error('Failed to fetch workspace', e);
     }
-  }, [API_BASE, apiOnline]);
-
-  // Fetch list of products
-  const fetchProducts = useCallback(async () => {
-    if (!apiOnline) return;
-    try {
-      const res = await fetch(`${API_BASE}/api/products`);
-      if (res.ok) {
-        const data = await res.json();
-        if (data && data.length > 0) setProducts(data);
-      }
-    } catch (e) {
-      console.error('Failed to fetch products', e);
-    }
-  }, [API_BASE, apiOnline]);
-
-  // Fetch sales summary
-  const fetchSales = useCallback(async () => {
-    if (!apiOnline) return;
-    try {
-      const res = await fetch(`${API_BASE}/api/sales`);
-      if (res.ok) {
-        const data = await res.json();
-        if (data && data.sales) setSales(data.sales);
-      }
-    } catch (e) {
-      console.error('Failed to fetch sales history', e);
-    }
-  }, [API_BASE, apiOnline]);
+  }, [API_BASE, apiOnline, hasStore, newStoreName, newStoreIndustry]);
 
   // Initial loads
   useEffect(() => {
     checkHealth();
-    fetchWorkspace();
-    fetchProducts();
-    fetchSales();
+    if (isAuthenticated && hasStore) {
+      fetchWorkspace();
+    }
+  }, [apiOnline, isAuthenticated, hasStore, checkHealth, fetchWorkspace]);
 
-    const interval = setInterval(() => {
-      checkHealth();
-      if (apiOnline) {
-        fetchProducts();
-        fetchSales();
-      }
-    }, 4000);
+  // Authentication Flow Handler
+  const handleAuthSubmit = async (email: string, isNew: boolean) => {
+    setUserEmail(email);
+    setIsAuthenticated(true);
 
-    return () => clearInterval(interval);
-  }, [apiOnline, checkHealth, fetchWorkspace, fetchProducts, fetchSales]);
+    if (isNew) {
+      // New User Flow -> Direct to Store Launch
+      setHasStore(false);
+      setWorkspace(null);
+      setNavTab('STORE_LAUNCH');
+    } else {
+      // Existing Owner Flow -> Direct to POS Billing Counter
+      setHasStore(true);
+      setWorkspace({
+        id: 'demo-ws',
+        name: 'Acme Retail & Store Hub',
+        industry: 'Retail Store & Kids Utilities',
+        description: 'Store Operations, POS Billing & AI Digital Workforce'
+      });
+      setNavTab('POS_BILLING');
+    }
+  };
+
+  const handleSignOut = () => {
+    setIsAuthenticated(false);
+    setHasStore(false);
+    setWorkspace(null);
+    setUserEmail('');
+    setUserPassword('');
+  };
+
+  // Complete Store Launch Wizard
+  const handleCompleteStoreLaunch = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newTitle || !newDesc) return;
+    setIsSubmitting(true);
+
+    const storeName = newStoreName || 'Acme Retail Store';
+    const storeInd = newStoreIndustry || 'Retail';
+
+    const mockId = 'mission-' + Date.now();
+    const newMission: Mission = {
+      id: mockId,
+      title: newTitle,
+      description: newDesc,
+      status: 'QUEUED',
+      priority: newPriority,
+      createdAt: new Date().toISOString(),
+      tasks: [
+        { id: mockId + '-t1', title: `Market & Competitor Research for ${newTitle}`, description: 'Demographic study and competitor pricing', workerType: 'Research', status: 'QUEUED', dependencies: [], output: null, assignments: [] },
+        { id: mockId + '-t2', title: `Financial Budget & Cost Allocation`, description: 'Inventory capital model and payback projection', workerType: 'Finance', status: 'WAITING_DEPENDENCIES', dependencies: [{ dependsOnTaskId: mockId + '-t1' }], output: null, assignments: [] },
+        { id: mockId + '-t3', title: `30-Day Launch Campaign Copy`, description: 'Ad slogans, flyers, and social media copy', workerType: 'Marketing', status: 'WAITING_DEPENDENCIES', dependencies: [{ dependsOnTaskId: mockId + '-t2' }], output: null, assignments: [] },
+        { id: mockId + '-t4', title: `Supplier Sourcing & Store SOP Blueprint`, description: 'Vendor network and daily opening SOP checklist', workerType: 'Operations', status: 'WAITING_DEPENDENCIES', dependencies: [{ dependsOnTaskId: mockId + '-t2' }], output: null, assignments: [] }
+      ],
+      activities: []
+    };
+
+    setWorkspace({
+      id: 'ws-' + Date.now(),
+      name: storeName,
+      industry: storeInd,
+      description: newDesc
+    });
+
+    setActiveMission(newMission);
+    setHasStore(true);
+    setIsSubmitting(false);
+
+    // Automatically navigate to unlocked POS Billing Counter
+    setNavTab('POS_BILLING');
+  };
 
   // POS Cart Management
   const addToCart = (product: Product) => {
@@ -308,7 +357,7 @@ export default function StoreCommandCenter() {
       createdAt: new Date().toISOString()
     };
 
-    // Update Local Stock Levels
+    // Update Stock Levels
     setProducts(prev =>
       prev.map(p => {
         const cartItem = cart.find(ci => ci.product.id === p.id);
@@ -319,40 +368,15 @@ export default function StoreCommandCenter() {
       })
     );
 
-    // Save Sale locally
     setSales(prev => [newSale, ...prev]);
 
-    // Backend API Sync
-    if (apiOnline) {
-      try {
-        await fetch(`${API_BASE}/api/sales/checkout`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            items: saleItems,
-            subtotal: cartSubtotal,
-            discount: discountAmount,
-            tax: taxAmount,
-            totalAmount: cartTotal,
-            paymentMethod,
-            customerName: customerName || 'Walk-in Customer',
-            customerPhone: customerPhone || '-'
-          })
-        });
-      } catch (e) {
-        console.error('Failed to sync sale to API', e);
-      }
-    }
-
-    // Show Printable Receipt Modal
+    // Show Receipt Modal
     setActiveInvoice(newSale);
     setShowReceiptModal(true);
-
-    // Reset Cart
     clearCart();
   };
 
-  // Quick Stock Level Adjustments
+  // Quick Stock Adjustments
   const handleAdjustStock = (productId: string, delta: number) => {
     setProducts(prev =>
       prev.map(p => (p.id === productId ? { ...p, stock: Math.max(0, p.stock + delta) } : p))
@@ -360,7 +384,7 @@ export default function StoreCommandCenter() {
   };
 
   // Add Product Form Handler
-  const handleAddProduct = async (e: React.FormEvent) => {
+  const handleAddProduct = (e: React.FormEvent) => {
     e.preventDefault();
     if (!prodName || !prodCost || !prodPrice || !prodStock) return;
 
@@ -377,27 +401,6 @@ export default function StoreCommandCenter() {
     };
 
     setProducts(prev => [newProd, ...prev]);
-
-    if (apiOnline) {
-      try {
-        await fetch(`${API_BASE}/api/products`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            name: prodName,
-            category: prodCategory,
-            costPrice: parseFloat(prodCost),
-            sellingPrice: parseFloat(prodPrice),
-            stock: parseInt(prodStock, 10),
-            minStockLevel: parseInt(prodMinStock, 10) || 5,
-            barcode: prodBarcode || undefined
-          })
-        });
-      } catch (e) {
-        console.error('Failed to add product via API', e);
-      }
-    }
-
     setShowAddProductModal(false);
     setProdName('');
     setProdCost('');
@@ -435,9 +438,131 @@ export default function StoreCommandCenter() {
 
   const lowStockCount = products.filter(p => p.stock <= p.minStockLevel).length;
 
+  // ========================================================================= //
+  // SCREEN 1: MULTI-TENANT SIGN IN / SIGN UP SCREEN                           //
+  // ========================================================================= //
+  if (!isAuthenticated) {
+    return (
+      <div className="min-h-screen bg-slate-950 text-slate-100 flex items-center justify-center p-4 selection:bg-cyan-500 selection:text-white relative overflow-hidden">
+        {/* Background Decorative Gradient Blobs */}
+        <div className="absolute top-1/4 left-1/4 h-96 w-96 rounded-full bg-cyan-500/10 blur-3xl pointer-events-none" />
+        <div className="absolute bottom-1/4 right-1/4 h-96 w-96 rounded-full bg-blue-600/10 blur-3xl pointer-events-none" />
+
+        <div className="max-w-md w-full bg-slate-900/90 border border-slate-800 rounded-2xl p-8 backdrop-blur-xl shadow-2xl space-y-6 relative z-10">
+          {/* Brand & Logo Header */}
+          <div className="text-center space-y-2">
+            <div className="h-14 w-14 rounded-2xl bg-gradient-to-tr from-cyan-500 via-blue-600 to-indigo-600 p-0.5 mx-auto shadow-xl shadow-cyan-500/20">
+              <div className="h-full w-full bg-slate-950 rounded-[14px] flex items-center justify-center">
+                <Store className="h-7 w-7 text-cyan-400" />
+              </div>
+            </div>
+            <h1 className="text-xl font-bold text-white tracking-tight">HiveForge Multi-Tenant Platform</h1>
+            <p className="text-xs text-slate-400">Retail Store Operating System & AI Workforce Hub</p>
+          </div>
+
+          {/* Quick Preset Buttons for Instant Demo Evaluation */}
+          <div className="space-y-2 pt-2 border-t border-b border-slate-800/80 py-4">
+            <p className="text-[11px] font-semibold uppercase tracking-wider text-slate-400 text-center">
+              Quick Sign-In Presets
+            </p>
+
+            <button
+              onClick={() => handleAuthSubmit('owner@acmeretail.com', false)}
+              className="w-full bg-slate-800 hover:bg-slate-700/80 border border-slate-700/60 rounded-xl p-3.5 text-left transition-all group flex items-center justify-between"
+            >
+              <div className="flex items-center space-x-3">
+                <div className="h-9 w-9 rounded-lg bg-cyan-500/10 text-cyan-400 flex items-center justify-center font-bold text-sm">
+                  🏪
+                </div>
+                <div>
+                  <div className="text-xs font-bold text-white flex items-center gap-1.5">
+                    <span>Existing Store Owner</span>
+                    <span className="text-[9px] bg-emerald-500/20 text-emerald-400 px-1.5 py-0.2 rounded font-mono">Has Store</span>
+                  </div>
+                  <div className="text-[10px] text-slate-400">Directs straight to 💳 POS Billing Counter</div>
+                </div>
+              </div>
+              <ArrowRight className="h-4 w-4 text-slate-400 group-hover:text-cyan-400 group-hover:translate-x-1 transition-all" />
+            </button>
+
+            <button
+              onClick={() => handleAuthSubmit('newmerchant@store.com', true)}
+              className="w-full bg-slate-800 hover:bg-slate-700/80 border border-slate-700/60 rounded-xl p-3.5 text-left transition-all group flex items-center justify-between"
+            >
+              <div className="flex items-center space-x-3">
+                <div className="h-9 w-9 rounded-lg bg-purple-500/10 text-purple-400 flex items-center justify-center font-bold text-sm">
+                  🆕
+                </div>
+                <div>
+                  <div className="text-xs font-bold text-white flex items-center gap-1.5">
+                    <span>New Merchant Sign Up</span>
+                    <span className="text-[9px] bg-cyan-500/20 text-cyan-400 px-1.5 py-0.2 rounded font-mono">No Store Yet</span>
+                  </div>
+                  <div className="text-[10px] text-slate-400">Directs to 🚀 Store Launch Setup Wizard</div>
+                </div>
+              </div>
+              <ArrowRight className="h-4 w-4 text-slate-400 group-hover:text-purple-400 group-hover:translate-x-1 transition-all" />
+            </button>
+          </div>
+
+          {/* Form Authentication */}
+          <form onSubmit={e => {
+            e.preventDefault();
+            if (!userEmail) return;
+            handleAuthSubmit(userEmail, false);
+          }} className="space-y-3">
+            <div>
+              <label className="text-[10px] text-slate-400 uppercase font-semibold">Email Address</label>
+              <div className="relative mt-1">
+                <User className="absolute left-3 top-2.5 h-4 w-4 text-slate-500" />
+                <input
+                  type="email"
+                  required
+                  placeholder="merchant@acmeretail.com"
+                  value={userEmail}
+                  onChange={e => setUserEmail(e.target.value)}
+                  className="w-full bg-slate-950 border border-slate-800 rounded-xl pl-9 pr-4 py-2 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-cyan-500"
+                />
+              </div>
+            </div>
+
+            <div>
+              <label className="text-[10px] text-slate-400 uppercase font-semibold">Password</label>
+              <div className="relative mt-1">
+                <Lock className="absolute left-3 top-2.5 h-4 w-4 text-slate-500" />
+                <input
+                  type="password"
+                  required
+                  placeholder="••••••••••••"
+                  value={userPassword}
+                  onChange={e => setUserPassword(e.target.value)}
+                  className="w-full bg-slate-950 border border-slate-800 rounded-xl pl-9 pr-4 py-2 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-cyan-500"
+                />
+              </div>
+            </div>
+
+            <button
+              type="submit"
+              className="w-full py-2.5 rounded-xl font-bold text-xs bg-gradient-to-r from-cyan-500 to-blue-600 text-slate-950 hover:from-cyan-400 hover:to-blue-500 shadow-lg shadow-cyan-500/25 transition-all"
+            >
+              Sign In to Platform
+            </button>
+          </form>
+
+          <div className="text-center text-[10px] text-slate-500 flex items-center justify-center gap-1.5">
+            <ShieldCheck className="h-3.5 w-3.5 text-cyan-400" /> Multi-Tenant Secured • Isolated Store Data
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // ========================================================================= //
+  // SCREEN 2: AUTHENTICATED COMMAND CENTER UI                                 //
+  // ========================================================================= //
   return (
     <div className="min-h-screen bg-slate-950 text-slate-100 font-sans antialiased selection:bg-cyan-500 selection:text-white pb-12">
-      {/* Top Header & Brand Bar */}
+      {/* Top Header & Multi-Tenant Merchant Bar */}
       <header className="border-b border-slate-800 bg-slate-900/80 backdrop-blur-md sticky top-0 z-40">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
           <div className="flex items-center space-x-4">
@@ -454,19 +579,19 @@ export default function StoreCommandCenter() {
                 </span>
               </div>
               <p className="text-xs text-slate-400">
-                {workspace ? `${workspace.name} • ${workspace.industry}` : 'Retail Operations • Billing Terminal • Inventory • AI Agents'}
+                {hasStore && workspace ? `${workspace.name} (${workspace.industry})` : 'New Merchant • Launching Store'}
               </p>
             </div>
           </div>
 
           <div className="flex items-center space-x-3">
-            {/* System Status Indicators */}
-            <div className="hidden md:flex items-center space-x-2 bg-slate-800/60 border border-slate-700/50 rounded-lg px-3 py-1.5 text-xs text-slate-300">
-              <div className={`h-2 w-2 rounded-full ${apiOnline ? 'bg-emerald-400 animate-pulse' : 'bg-amber-400'}`} />
-              <span>{apiOnline ? 'API Connected' : 'Local Offline Mode'}</span>
+            {/* Merchant Profile & Sign Out */}
+            <div className="hidden sm:flex items-center space-x-2 bg-slate-800/80 border border-slate-700/50 rounded-lg px-3 py-1.5 text-xs text-slate-300">
+              <User className="h-3.5 w-3.5 text-cyan-400" />
+              <span>{userEmail || 'merchant@store.com'}</span>
             </div>
 
-            {lowStockCount > 0 && (
+            {hasStore && lowStockCount > 0 && (
               <button 
                 onClick={() => setNavTab('INVENTORY')}
                 className="flex items-center space-x-1.5 bg-amber-500/10 border border-amber-500/30 text-amber-400 px-3 py-1.5 rounded-lg text-xs font-medium hover:bg-amber-500/20 transition-all"
@@ -476,85 +601,94 @@ export default function StoreCommandCenter() {
               </button>
             )}
 
-            <button 
-              onClick={() => setShowAddProductModal(true)}
-              className="flex items-center space-x-1.5 bg-cyan-600 hover:bg-cyan-500 text-white px-3.5 py-1.5 rounded-lg text-xs font-semibold shadow-md shadow-cyan-600/20 transition-all"
+            <button
+              onClick={handleSignOut}
+              className="bg-slate-800 hover:bg-slate-700 text-slate-300 px-3 py-1.5 rounded-lg text-xs font-semibold flex items-center space-x-1 transition-all"
             >
-              <Plus className="h-4 w-4" />
-              <span>Add Product</span>
+              <LogOut className="h-3.5 w-3.5" />
+              <span className="hidden sm:inline">Sign Out</span>
             </button>
           </div>
         </div>
 
         {/* Navigation Tabs Bar */}
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex space-x-1 border-t border-slate-800/80 overflow-x-auto">
-          <button
-            onClick={() => setNavTab('POS_BILLING')}
-            className={`flex items-center space-x-2 py-3 px-4 text-xs font-semibold border-b-2 transition-all whitespace-nowrap ${
-              navTab === 'POS_BILLING'
-                ? 'border-cyan-400 text-cyan-400 bg-cyan-500/5'
-                : 'border-transparent text-slate-400 hover:text-slate-200'
-            }`}
-          >
-            <ShoppingCart className="h-4 w-4" />
-            <span>POS Billing Counter</span>
-            {cart.length > 0 && (
-              <span className="bg-cyan-500 text-slate-950 font-bold px-1.5 py-0.5 rounded-full text-[10px]">
-                {cart.reduce((acc, item) => acc + item.quantity, 0)}
-              </span>
-            )}
-          </button>
+          {hasStore ? (
+            <>
+              <button
+                onClick={() => setNavTab('POS_BILLING')}
+                className={`flex items-center space-x-2 py-3 px-4 text-xs font-semibold border-b-2 transition-all whitespace-nowrap ${
+                  navTab === 'POS_BILLING'
+                    ? 'border-cyan-400 text-cyan-400 bg-cyan-500/5'
+                    : 'border-transparent text-slate-400 hover:text-slate-200'
+                }`}
+              >
+                <ShoppingCart className="h-4 w-4" />
+                <span>POS Billing Counter</span>
+                {cart.length > 0 && (
+                  <span className="bg-cyan-500 text-slate-950 font-bold px-1.5 py-0.5 rounded-full text-[10px]">
+                    {cart.reduce((acc, item) => acc + item.quantity, 0)}
+                  </span>
+                )}
+              </button>
 
-          <button
-            onClick={() => setNavTab('INVENTORY')}
-            className={`flex items-center space-x-2 py-3 px-4 text-xs font-semibold border-b-2 transition-all whitespace-nowrap ${
-              navTab === 'INVENTORY'
-                ? 'border-cyan-400 text-cyan-400 bg-cyan-500/5'
-                : 'border-transparent text-slate-400 hover:text-slate-200'
-            }`}
-          >
-            <Package className="h-4 w-4" />
-            <span>Inventory Catalog</span>
-            <span className="bg-slate-800 text-slate-300 font-mono px-1.5 py-0.5 rounded text-[10px]">
-              {products.length}
-            </span>
-          </button>
+              <button
+                onClick={() => setNavTab('INVENTORY')}
+                className={`flex items-center space-x-2 py-3 px-4 text-xs font-semibold border-b-2 transition-all whitespace-nowrap ${
+                  navTab === 'INVENTORY'
+                    ? 'border-cyan-400 text-cyan-400 bg-cyan-500/5'
+                    : 'border-transparent text-slate-400 hover:text-slate-200'
+                }`}
+              >
+                <Package className="h-4 w-4" />
+                <span>Inventory Catalog</span>
+                <span className="bg-slate-800 text-slate-300 font-mono px-1.5 py-0.5 rounded text-[10px]">
+                  {products.length}
+                </span>
+              </button>
 
-          <button
-            onClick={() => setNavTab('SALES_ANALYTICS')}
-            className={`flex items-center space-x-2 py-3 px-4 text-xs font-semibold border-b-2 transition-all whitespace-nowrap ${
-              navTab === 'SALES_ANALYTICS'
-                ? 'border-cyan-400 text-cyan-400 bg-cyan-500/5'
-                : 'border-transparent text-slate-400 hover:text-slate-200'
-            }`}
-          >
-            <TrendingUp className="h-4 w-4" />
-            <span>Sales & Analytics</span>
-          </button>
+              <button
+                onClick={() => setNavTab('SALES_ANALYTICS')}
+                className={`flex items-center space-x-2 py-3 px-4 text-xs font-semibold border-b-2 transition-all whitespace-nowrap ${
+                  navTab === 'SALES_ANALYTICS'
+                    ? 'border-cyan-400 text-cyan-400 bg-cyan-500/5'
+                    : 'border-transparent text-slate-400 hover:text-slate-200'
+                }`}
+              >
+                <TrendingUp className="h-4 w-4" />
+                <span>Sales & Analytics</span>
+              </button>
 
-          <button
-            onClick={() => setNavTab('STORE_LAUNCH')}
-            className={`flex items-center space-x-2 py-3 px-4 text-xs font-semibold border-b-2 transition-all whitespace-nowrap ${
-              navTab === 'STORE_LAUNCH'
-                ? 'border-cyan-400 text-cyan-400 bg-cyan-500/5'
-                : 'border-transparent text-slate-400 hover:text-slate-200'
-            }`}
-          >
-            <Compass className="h-4 w-4" />
-            <span>Store Launch & AI Missions</span>
-          </button>
+              <button
+                onClick={() => setNavTab('STORE_LAUNCH')}
+                className={`flex items-center space-x-2 py-3 px-4 text-xs font-semibold border-b-2 transition-all whitespace-nowrap ${
+                  navTab === 'STORE_LAUNCH'
+                    ? 'border-cyan-400 text-cyan-400 bg-cyan-500/5'
+                    : 'border-transparent text-slate-400 hover:text-slate-200'
+                }`}
+              >
+                <Compass className="h-4 w-4" />
+                <span>Store Launch & AI Missions</span>
+              </button>
 
-          <button
-            onClick={() => setNavTab('WORKFORCE')}
-            className={`flex items-center space-x-2 py-3 px-4 text-xs font-semibold border-b-2 transition-all whitespace-nowrap ${
-              navTab === 'WORKFORCE'
-                ? 'border-cyan-400 text-cyan-400 bg-cyan-500/5'
-                : 'border-transparent text-slate-400 hover:text-slate-200'
-            }`}
-          >
-            <Cpu className="h-4 w-4" />
-            <span>Digital Workforce</span>
-          </button>
+              <button
+                onClick={() => setNavTab('WORKFORCE')}
+                className={`flex items-center space-x-2 py-3 px-4 text-xs font-semibold border-b-2 transition-all whitespace-nowrap ${
+                  navTab === 'WORKFORCE'
+                    ? 'border-cyan-400 text-cyan-400 bg-cyan-500/5'
+                    : 'border-transparent text-slate-400 hover:text-slate-200'
+                }`}
+              >
+                <Cpu className="h-4 w-4" />
+                <span>Digital Workforce</span>
+              </button>
+            </>
+          ) : (
+            <div className="py-3 px-4 text-xs font-bold text-cyan-400 border-b-2 border-cyan-400 flex items-center space-x-2">
+              <Compass className="h-4 w-4" />
+              <span>🚀 Step 1: Launch Your New Store</span>
+            </div>
+          )}
         </div>
       </header>
 
@@ -562,9 +696,92 @@ export default function StoreCommandCenter() {
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mt-6">
         
         {/* ========================================================================= */}
+        {/* NEW USER STORE LAUNCH WIZARD (WHEN NO STORE EXISTS)                      */}
+        {/* ========================================================================= */}
+        {!hasStore && (
+          <div className="max-w-2xl mx-auto space-y-6">
+            <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6 shadow-2xl space-y-5">
+              <div className="flex items-center space-x-3 pb-4 border-b border-slate-800">
+                <div className="h-10 w-10 rounded-xl bg-gradient-to-tr from-purple-500 to-cyan-500 flex items-center justify-center text-slate-950 font-bold">
+                  🚀
+                </div>
+                <div>
+                  <h2 className="font-bold text-base text-white">Welcome, New Merchant!</h2>
+                  <p className="text-xs text-slate-400">Launch your new store using HiveForge AI Workforce to unlock the POS Billing Terminal.</p>
+                </div>
+              </div>
+
+              <form onSubmit={handleCompleteStoreLaunch} className="space-y-4">
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="text-[10px] text-slate-400 uppercase font-semibold">Store Name</label>
+                    <input
+                      type="text"
+                      required
+                      placeholder="e.g. Salem Kids & Utility Hub"
+                      value={newStoreName}
+                      onChange={e => setNewStoreName(e.target.value)}
+                      className="w-full bg-slate-950 border border-slate-800 rounded-lg px-3.5 py-2 text-xs text-white placeholder-slate-500 mt-1 focus:outline-none focus:border-cyan-500"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="text-[10px] text-slate-400 uppercase font-semibold">Industry Sector</label>
+                    <select
+                      value={newStoreIndustry}
+                      onChange={e => setNewStoreIndustry(e.target.value)}
+                      className="w-full bg-slate-950 border border-slate-800 rounded-lg px-3.5 py-2 text-xs text-white mt-1 focus:outline-none"
+                    >
+                      <option value="Retail">Retail & Stationery</option>
+                      <option value="Kids & Toys">Kids & Toys</option>
+                      <option value="Apparel & Fashion">Apparel & Fashion</option>
+                      <option value="Grocery & FMCG">Grocery & FMCG</option>
+                      <option value="Electronics">Electronics</option>
+                    </select>
+                  </div>
+                </div>
+
+                <div>
+                  <label className="text-[10px] text-slate-400 uppercase font-semibold">Initial Store Launch Goal</label>
+                  <input
+                    type="text"
+                    required
+                    placeholder="e.g. Launch Ayothiyapattanam Kids & Stationery Store"
+                    value={newTitle}
+                    onChange={e => setNewTitle(e.target.value)}
+                    className="w-full bg-slate-950 border border-slate-800 rounded-lg px-3.5 py-2 text-xs text-white placeholder-slate-500 mt-1 focus:outline-none focus:border-cyan-500"
+                  />
+                </div>
+
+                <div>
+                  <label className="text-[10px] text-slate-400 uppercase font-semibold">Store Scope & Location Details</label>
+                  <textarea
+                    required
+                    placeholder="Target location, customer demographics, inventory budget limit..."
+                    value={newDesc}
+                    onChange={e => setNewDesc(e.target.value)}
+                    rows={3}
+                    className="w-full bg-slate-950 border border-slate-800 rounded-lg px-3.5 py-2 text-xs text-white placeholder-slate-500 mt-1 focus:outline-none focus:border-cyan-500"
+                  />
+                </div>
+
+                <button
+                  type="submit"
+                  disabled={isSubmitting || !newTitle || !newDesc}
+                  className="w-full py-3 rounded-xl bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-slate-950 font-bold text-xs shadow-lg shadow-cyan-500/25 transition-all flex items-center justify-center space-x-2"
+                >
+                  <Sparkles className="h-4 w-4 fill-current" />
+                  <span>Launch Store & Unlock POS Terminal ➔</span>
+                </button>
+              </form>
+            </div>
+          </div>
+        )}
+
+        {/* ========================================================================= */}
         {/* TAB 1: POS BILLING COUNTER TERMINAL                                     */}
         {/* ========================================================================= */}
-        {navTab === 'POS_BILLING' && (
+        {hasStore && navTab === 'POS_BILLING' && (
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
             {/* Left Column: Product Selection Grid */}
             <div className="lg:col-span-2 space-y-4">
@@ -839,7 +1056,7 @@ export default function StoreCommandCenter() {
         {/* ========================================================================= */}
         {/* TAB 2: INVENTORY CATALOG MANAGEMENT                                     */}
         {/* ========================================================================= */}
-        {navTab === 'INVENTORY' && (
+        {hasStore && navTab === 'INVENTORY' && (
           <div className="space-y-4">
             {/* Action Bar */}
             <div className="bg-slate-900 border border-slate-800 rounded-xl p-4 flex flex-col sm:flex-row items-center justify-between gap-3">
@@ -941,7 +1158,7 @@ export default function StoreCommandCenter() {
         {/* ========================================================================= */}
         {/* TAB 3: SALES & REVENUE ANALYTICS                                        */}
         {/* ========================================================================= */}
-        {navTab === 'SALES_ANALYTICS' && (
+        {hasStore && navTab === 'SALES_ANALYTICS' && (
           <div className="space-y-6">
             {/* Key Metrics Cards */}
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
@@ -1078,7 +1295,7 @@ export default function StoreCommandCenter() {
         {/* ========================================================================= */}
         {/* TAB 4: STORE LAUNCH & AI MISSIONS                                       */}
         {/* ========================================================================= */}
-        {navTab === 'STORE_LAUNCH' && (
+        {hasStore && navTab === 'STORE_LAUNCH' && (
           <div className="space-y-6">
             {/* Create Store Mission Form */}
             <div className="bg-slate-900 border border-slate-800 rounded-xl p-5 shadow-lg">
@@ -1190,7 +1407,7 @@ export default function StoreCommandCenter() {
         {/* ========================================================================= */}
         {/* TAB 5: DIGITAL WORKFORCE TELEMETRY                                      */}
         {/* ========================================================================= */}
-        {navTab === 'WORKFORCE' && (
+        {hasStore && navTab === 'WORKFORCE' && (
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div className="bg-slate-900 border border-slate-800 rounded-xl p-5 space-y-4">
               <h3 className="font-bold text-sm text-white flex items-center gap-2">
