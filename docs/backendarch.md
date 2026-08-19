@@ -377,35 +377,34 @@ prisma/
 config/
 Simple.
 Professional.
-Scalable.
+Store Inventory & POS Module
+Responsible for:
+• List Products Catalog (GET /api/products)
+• Create Product (POST /api/products)
+• Process Sale Checkout & Print Receipt (POST /api/sales/checkout)
+• Get Sales Transactions & Summary (GET /api/sales)
+
+APIs
+GET /api/products
+POST /api/products
+POST /api/sales/checkout
+GET /api/sales
+
 ________________________________________
 Dependency Rule
 One strict rule.
 Frontend
-
 ↓
-
-Mission Module
-
+Mission & Store Module
 ↓
-
 Hive Core
-
 ↓
-
 Worker Module
-
 ↓
-
 AI Module
-Never:
-Worker
 
-↓
+Workers never know Missions exist. This keeps the system loosely coupled.
 
-Mission Module
-Workers never know Missions exist.
-This keeps the system loosely coupled.
 ________________________________________
 MVP Module Map
 Frontend

@@ -61,6 +61,8 @@ model Workspace {
   files          File[]
   embeddings     Embedding[]
   workers        Worker[]
+  products       Product[]
+  sales          Sale[]
 }
 
 enum MissionStatus {

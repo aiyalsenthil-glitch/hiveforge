@@ -657,29 +657,13 @@ AI Runtime Design Principles
 •	Parallel-ready 
 •	Observable 
 ________________________________________
-MVP Scope
-For the hackathon:
-✅ Fireworks AI provider
-✅ Prompt Builder
-✅ JSON schema validation
-✅ Four worker prompts
-✅ Parallel execution where possible
-Everything else can be added later.
-Every Digital Worker must implement the exact same interface.
-export interface DigitalWorker {
-  readonly id: string;
-  readonly role: string;
-  readonly version: string;
+________________________________________
+Store Command Center & POS UI Architecture
 
-  execute(
-    task: WorkerTask,
-    context: WorkerContext
-  ): Promise<WorkerResult>;
-}
-This gives us a true plug-in architecture.
-Adding a new worker later should require only:
-1.	Create a new worker class. 
-2.	Register it. 
-3.	Provide a prompt. 
-4.	Done. 
-No changes to Hive Core.
+Top Navigation Tabs (`navTab` State):
+1. 💳 `POS_BILLING`: Live product search, cart quantity controls, discount & 5% GST tax, Cash/UPI/Card payment selector, printable tax invoice receipt modal (`INV-2026-XXXX`).
+2. 📦 `INVENTORY`: Product stock matrix, unit cost & selling prices, margin % analysis, low stock threshold warning alerts, quick stock adjustment (`+10` / `-5`), Add Product modal.
+3. 📊 `SALES_ANALYTICS`: Total tracked revenue, sales transactions count, average profit margin %, transaction history table, AI Sales & Inventory Advisor.
+4. 🚀 `STORE_LAUNCH`: Goal composer, worker assignments, execution graph, deliverable preview tabs.
+5. 🤖 `WORKFORCE`: Active worker agent status telemetry and real-time execution logs.
+

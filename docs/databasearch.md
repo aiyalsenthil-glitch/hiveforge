@@ -308,82 +308,55 @@ Destroyed
 •	Nothing is stored.
 •	Only assignment history.
 •	________________________________________
+•	Entity 8 — Product (Inventory)
+•	Represents catalog items in the retail store.
+•	Product
+    id
+    workspaceId
+    sku
+    name
+    category
+    costPrice
+    sellingPrice
+    stock
+    minStockLevel
+    barcode
+    createdAt
+    updatedAt
+
+•	Entity 9 — Sale (POS Transactions)
+•	Represents POS checkout transactions and receipts.
+•	Sale
+    id
+    workspaceId
+    invoiceNo
+    subtotal
+    discount
+    tax
+    totalAmount
+    paymentMethod (CASH, UPI, CARD)
+    customerName
+    customerPhone
+    items (JSONB Array of line items)
+    createdAt
+
+•	________________________________________
 •	PostgreSQL Tables
 •	workspaces
+  missions
+  tasks
+  worker_assignments
+  deliverables
+  knowledge
+  activities
+  products
+  sales
 
-missions
-
-tasks
-
-worker_assignments
-
-deliverables
-
-knowledge
-
-activities
-•	Only 7 tables.
-•	Very clean.
-•	________________________________________
-•	Why not store Workers?
-•	Because
-•	Research Worker
-•	today
-•	=
-•	Research Worker
-•	tomorrow
-•	They're code.
-•	Not data.
-•	Only assignments change.
-•	This is a huge simplification.
-•	________________________________________
-•	JSON Storage
-•	Instead of 100 tables...
-•	We'll leverage PostgreSQL's JSONB.
-•	Mission
-•	executionGraph
-
-JSONB
-•	Task
-•	input
-
-JSONB
-
-output
-
-JSONB
-•	Deliverable
-•	metadata
-
-JSONB
-•	This gives us flexibility during the hackathon.
-•	________________________________________
-•	MVP ER Diagram
-•	Workspace
-     │
-     ▼
- Mission
-     │
- ┌───┴───────────┐
- ▼               ▼
-Task      Deliverable
- │
- ▼
-WorkerAssignment
-
-Workspace
- │
- ▼
-Knowledge
-
-Workspace
- │
- ▼
-Activity
 •	________________________________________
 •	Database Design Principles
 •	✅ Normalize core business data
-•	✅ Store AI outputs as JSONB
+•	✅ Store AI outputs & invoice items as JSONB
 •	✅ Stateless workers
-•	✅ Mission-centric
-•	✅ Simple schema
+•	✅ Mission & Store-centric schema
+•	✅ Clean, extensible database design
+
